@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>STAY OR GO: should you renew or move?</title>
+<meta name="description" content="Got a rent-increase letter? Find out with real math whether to stay and negotiate or move. Free Fair Rent Score. We never contact your landlord.">
+<meta property="og:title" content="STAY OR GO">
+<meta property="og:description" content="Check your rent increase against local market rent. Free.">
+<meta name="theme-color" content="#1f3bd1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Public+Sans:ital,wght@0,400;0,600;0,800;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<!--
+  ============================================================
+  STAY OR GO — single-file app, ready for GitHub Pages.
+  Settings live in the CONFIG block at the top of the main script
+  near the bottom of this file. See STAY-OR-GO-SETUP.md.
+  ============================================================
+-->
+<style>
+:root {
+  --cobalt: #1f3bd1; --cobalt-deep: #142a9e; --yellow: #ffd23f; --ink: #0d1024;
+  --paper: #f4f5f8; --white: #fff; --muted: #555b73; --line: #d9dce6;
+  --win: #0f8a4f; --loss: #c8211b;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.55; }
+a { color: var(--cobalt); }
+:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+.narrow { max-width: 640px; margin: 0 auto; padding: 0 20px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 900; text-transform: uppercase; line-height: .95; letter-spacing: .01em; text-wrap: balance; margin: 0; overflow-wrap: break-word; }
+h2 { font-size: clamp(38px, 7vw, 64px); }
+h3 { font-size: 26px; }
+p { margin: 0 0 12px; }
+.eyebrow { font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+.num, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.tiny { font-size: 12px; }
+.stack { display: grid; gap: 16px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--display); font-weight: 900; font-size: 22px; text-transform: uppercase; letter-spacing: .03em; padding: 13px 24px; min-height: 54px; border: 3px solid var(--ink); background: var(--yellow); color: var(--ink); text-decoration: none; cursor: pointer; box-shadow: 5px 5px 0 var(--ink); transition: transform .1s, box-shadow .1s; text-align: center; }
+.btn:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 var(--ink); }
+.btn:active { transform: translate(3px,3px); box-shadow: 2px 2px 0 var(--ink); }
+.btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.btn.ghost { background: var(--white); }
+.btn.ink { background: var(--ink); color: var(--white); }
+.btn.sm { font-size: 17px; padding: 8px 16px; min-height: 44px; box-shadow: 3px 3px 0 var(--ink); }
+.btn.block { width: 100%; }
+.link { background: none; border: 0; padding: 0; min-height: 44px; font-family: var(--mono); font-size: 13px; color: var(--muted); text-decoration: underline; cursor: pointer; }
+
+/* NAV + HERO */
+.nav { background: var(--cobalt); color: #fff; padding-top: env(safe-area-inset-top); }
+footer { padding-bottom: calc(40px + env(safe-area-inset-bottom)) !important; }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+.logo { font-family: var(--display); font-weight: 900; font-size: 27px; letter-spacing: .04em; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.logo svg { width: 28px; height: 28px; flex: none; }
+.nav .go { font-family: var(--display); font-weight: 900; font-size: 17px; text-transform: uppercase; color: var(--ink); background: var(--yellow); padding: 8px 12px; text-decoration: none; border: 2px solid var(--ink); white-space: nowrap; }
+.hero { background: var(--cobalt); color: #fff; padding: 28px 0 64px; overflow: hidden; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(300px, .9fr); gap: 44px; align-items: center; }
+.hero h1 { font-size: clamp(54px, 9vw, 96px); }
+.hl { background: var(--yellow); color: var(--ink); padding: 0 .12em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.tag { display: inline-block; font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; background: var(--yellow); color: var(--ink); padding: 5px 10px; margin: 0 0 18px; }
+.lead { font-size: 19px; color: #e6e9ff; max-width: 34em; margin: 22px 0 28px; }
+.fine { font-family: var(--mono); font-size: 12px; color: #c3cafc; margin-top: 16px; }
+.jump { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.jump a { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #fff; border: 2px solid rgba(255,255,255,.55); padding: 6px 10px; text-decoration: none; }
+
+/* CARDS */
+.card { background: var(--white); border: 3px solid var(--ink); }
+.card.pad { padding: 20px; }
+.shadow { box-shadow: 10px 10px 0 var(--cobalt-deep); }
+.shadow-ink { box-shadow: 5px 5px 0 var(--ink); }
+.yellow { background: var(--yellow); }
+.example { transform: rotate(1.2deg); font-family: var(--mono); font-size: 14px; position: relative; color: var(--ink); }
+.example .head { display: flex; justify-content: space-between; border-bottom: 2px dashed var(--ink); padding: 12px 18px; }
+.example .body { padding: 14px 18px 20px; }
+.example figcaption { font-family: var(--body); font-size: 12px; color: var(--muted); padding: 0 18px 14px; }
+
+/* SECTIONS */
+section { padding: 64px 0; }
+section.alt { background: var(--white); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+section.blue { background: var(--cobalt); color: #fff; }
+section.band { background: var(--yellow); border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); }
+.sec-head { margin-bottom: 30px; }
+.sec-head p { font-size: 18px; color: var(--muted); margin-top: 14px; }
+section.blue .sec-head p, section.blue .eyebrow { color: #c3cafc; }
+section.blue .card .eyebrow { color: var(--muted); }
+.step-no { display: inline-block; font-family: var(--display); font-weight: 900; font-size: 18px; background: var(--ink); color: #fff; padding: 2px 10px; margin-bottom: 10px; }
+
+/* FORMS */
+label.f, legend.f { display: block; font-weight: 800; font-size: 15px; margin-bottom: 6px; padding: 0; }
+.opt { font-weight: 400; color: var(--muted); }
+input.in, select.in, textarea.in { font: 16px var(--body); padding: 12px; border: 2px solid var(--ink); background: var(--paper); color: var(--ink); border-radius: 0; width: 100%; min-height: 48px; }
+textarea.in { min-height: 110px; resize: vertical; }
+.money { display: flex; }
+.money span { border: 2px solid var(--ink); background: #fff; padding: 0 12px; display: flex; align-items: center; font-family: var(--mono); font-size: 14px; }
+.money span:first-child { border-right: 0; }
+.money span:last-child:not(:first-child) { border-left: 0; }
+.money input { font-family: var(--mono); }
+.hint { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.chips { display: grid; gap: 8px; }
+.chips.c2 { grid-template-columns: 1fr 1fr; }
+.chips.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.chip { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 2px solid var(--ink); background: #fff; padding: 8px 10px; font: 600 15px var(--body); color: var(--ink); cursor: pointer; min-height: 46px; }
+.chip[aria-pressed="true"] { background: var(--yellow); box-shadow: inset 0 0 0 2px var(--ink); }
+.check-row { display: flex; gap: 10px; align-items: center; border: 2px solid var(--ink); background: #fff; padding: 8px 12px; min-height: 48px; flex-wrap: wrap; }
+.check-row input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--cobalt); flex: none; }
+.check-row input.inline { border: 0; border-bottom: 2px solid var(--ink); background: transparent; padding: 4px; font: 15px var(--body); flex: 1; min-width: 140px; }
+.or { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 13px; color: var(--muted); margin: 22px 0; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.status { font-weight: 600; padding: 12px 14px; border: 2px solid var(--ink); }
+.status.err { background: #fdeaea; border-color: #b42318; color: #7a1a12; }
+.status.ok { background: #e3f6ec; border-color: var(--win); color: #064d2b; }
+.spin { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 14px; }
+.spin::before { content: ""; width: 16px; height: 16px; border: 3px solid var(--ink); border-top-color: transparent; border-radius: 50%; animation: sp .8s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin::before { animation: none; } }
+
+/* RESULT */
+.score { font-family: var(--display); font-weight: 900; font-size: 128px; line-height: .85; }
+.score small { font-size: 40px; color: var(--muted); }
+.pill { white-space: nowrap; display: inline-block; font-family: var(--display); font-weight: 900; font-size: 20px; color: #fff; padding: 2px 10px; }
+.pill.good { background: var(--win); } .pill.bad { background: var(--loss); }
+.meter { height: 28px; border: 3px solid var(--ink); background: var(--paper); position: relative; }
+.meter > i { display: block; height: 100%; background: var(--cobalt); }
+.meter-l { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 4px; }
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-family: var(--mono); font-size: 13px; margin: 18px 0 0; }
+.trio dt { color: var(--muted); } .trio dd { margin: 0; font-weight: 600; }
+.stamp { font-family: var(--display); font-weight: 900; letter-spacing: .04em; border: 6px solid currentColor; padding: 0 .22em; display: inline-block; transform: rotate(-10deg); background: rgba(255,255,255,.92); line-height: 1.05; }
+.stamp.stay { color: var(--win); } .stamp.go { color: var(--loss); }
+.stamp-box { text-align: center; padding: 14px 0 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  .stamp.pop { animation: pop .35s cubic-bezier(.2,1.6,.4,1) both; }
+  @keyframes pop { from { transform: rotate(-10deg) scale(2.2); opacity: 0; } to { transform: rotate(-10deg) scale(1); opacity: 1; } }
+}
+.big { font-family: var(--display); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.countdown { display: flex; align-items: center; gap: 18px; }
+.countdown .big { font-size: 80px; color: var(--cobalt); }
+.countdown .big.urgent { color: var(--loss); }
+
+/* DETAILS */
+details.how { border: 2px solid var(--ink); background: var(--paper); margin-top: 16px; color: var(--ink); }
+details.how summary, .faq summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; align-items: center; min-height: 46px; }
+details.how summary { padding: 10px 14px; font-weight: 800; font-size: 15px; }
+details summary::-webkit-details-marker { display: none; }
+details.how summary::after, .faq summary::after { content: "+"; font-family: var(--display); font-size: 26px; line-height: .8; }
+details[open].how summary::after, .faq details[open] summary::after { content: "–"; }
+details.how .in-how { padding: 0 14px 14px; font-size: 15px; color: var(--muted); }
+details.how ol, details.how ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.src { font-family: var(--mono); font-size: 12px; margin-top: 10px; }
+.sample { color: var(--loss); font-weight: 600; }
+
+/* TABLES */
+table.t { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 14px; }
+table.t td { padding: 9px 14px; border-bottom: 1px solid var(--line); }
+table.t td:last-child { text-align: right; }
+table.t tr.total td { background: var(--ink); color: #fff; font-weight: 600; }
+
+/* LOCK */
+.locked { position: relative; }
+.lockbox { text-align: center; padding: 28px 20px; }
+.lockbox .padlock { width: 44px; height: 44px; margin: 0 auto 10px; display: block; }
+.blur { filter: blur(9px); user-select: none; pointer-events: none; }
+.badge { display: inline-block; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding: 4px 8px; border: 2px solid var(--ink); background: var(--yellow); color: var(--ink); }
+.badge.win { background: var(--win); color: #fff; border-color: var(--win); }
+
+/* PRICING */
+.prices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
+.price { border: 2px solid var(--line); background: var(--paper); padding: 22px 20px; display: flex; flex-direction: column; gap: 10px; }
+.price.pick { border: 3px solid var(--ink); background: var(--yellow); box-shadow: 6px 6px 0 var(--ink); }
+.price .amt { font-family: var(--display); font-weight: 900; font-size: 56px; line-height: 1; }
+.price ul { margin: 4px 0 8px; padding-left: 18px; font-size: 15px; }
+.price .btn { margin-top: auto; }
+.codebox { margin-top: 28px; }
+
+/* MESSAGES + ITEMS + LISTINGS */
+.msg header, .item header { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 2px dashed var(--ink); padding: 10px 16px; }
+.msg .b { padding: 14px 16px; white-space: pre-wrap; font-size: 16px; }
+.msg .subj { font-family: var(--mono); font-size: 13px; color: var(--muted); padding: 12px 16px 0; }
+.item .b { padding: 14px 16px; }
+.verdict { font-family: var(--display); font-weight: 900; font-size: 22px; padding: 2px 10px; border: 2px solid var(--ink); }
+.verdict.Keep { background: #fff; } .verdict.Sell { background: var(--yellow); } .verdict.Donate { background: var(--paper); }
+.listing-card { padding: 16px; display: grid; gap: 8px; }
+.listing-card.best { background: var(--yellow); box-shadow: 5px 5px 0 var(--ink); }
+.listing-card .lrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-family: var(--mono); font-size: 13px; }
+.listing-card .lrow input { width: 96px; border: 2px solid var(--ink); background: #fff; padding: 6px 8px; text-align: right; font: 14px var(--mono); }
+.listing-card .name { font-family: var(--display); font-weight: 900; font-size: 24px; text-transform: uppercase; border: 0; border-bottom: 2px solid rgba(13,16,36,.3); background: transparent; width: 100%; padding: 2px 0; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.room { padding: 16px 18px; }
+.room legend { font-family: var(--display); font-weight: 900; font-size: 24px; text-transform: uppercase; background: #fff; padding: 0 8px; }
+.room label { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; min-height: 44px; cursor: pointer; }
+.room input { width: 24px; height: 24px; flex: none; accent-color: var(--cobalt); margin-top: 1px; }
+.room input:checked + span { text-decoration: line-through; color: var(--muted); }
+
+/* TRUST + FAQ + FOOTER */
+.trust { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.trust li { background: #fff; border: 3px solid var(--ink); padding: 14px 18px; }
+.trust strong { display: block; font-size: 18px; }
+.faq { display: grid; gap: 12px; }
+.faq details { border: 2px solid var(--ink); background: #fff; }
+.faq summary { padding: 14px 18px; font-weight: 800; font-size: 17px; }
+.faq .a { padding: 0 18px 16px; color: var(--muted); }
+footer { background: var(--ink); color: #b9bdd0; padding: 40px 0; font-size: 14px; }
+footer .wrap { display: grid; gap: 12px; }
+footer ul { margin: 0; padding: 0; list-style: none; font-family: var(--mono); font-size: 13px; color: var(--yellow); display: grid; gap: 4px; }
+
+@media (max-width: 880px) {
+  .hero .wrap, .prices, .grid3 { grid-template-columns: minmax(0, 1fr); }
+  .example { transform: none; margin-right: 10px; }
+}
+@media (max-width: 520px) {
+  .two { grid-template-columns: 1fr; }
+  .two.keep { grid-template-columns: 1fr 1fr; }
+  section { padding: 48px 0; }
+  .score { font-size: 112px; }
+  .hero h1 { font-size: 56px; }
+}
+@media print {
+  .nav, .hero, #check, #get, .no-print, footer, #trust, #faq, .btn, details.how summary::after { display: none !important; }
+  details.how { display: block; } details.how > .in-how { display: block; }
+  section { padding: 16px 0; break-inside: avoid-page; }
+  body { background: #fff; }
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="STAY OR GO, top of page">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" fill="#ffd23f" stroke="#0d1024" stroke-width="3"/><path d="M9 16h9M14 11l5 5-5 5" stroke="#0d1024" stroke-width="3.2" fill="none"/><path d="M22 9v14" stroke="#0d1024" stroke-width="3.2"/></svg>
+      STAY OR GO
+    </a>
+    <a class="go" href="#check">Check free</a>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ===================== HERO ===================== -->
+<section class="hero" aria-labelledby="h-hero">
+  <div class="wrap">
+    <div>
+      <p class="tag">Renewal letter just arrived?</p>
+      <h1 id="h-hero">Stay and fight, <span class="hl">or pack and go?</span></h1>
+      <p class="lead">Snap a photo of the letter. In two minutes you'll see how your new rent compares to similar units nearby, and whether moving would actually save you money.</p>
+      <a class="btn" href="#check">Check my rent increase (free) →</a>
+      <p class="fine">No account · We never contact your landlord · Works on your phone</p>
+      <nav class="jump" aria-label="Jump to">
+        <a href="#result">Score</a><a href="#report">Report</a><a href="#move">Move Kit</a><a href="#get">Unlock</a>
+      </nav>
+    </div>
+    <figure class="card shadow example" aria-label="Example result">
+      <div class="head"><strong>FAIR RENT SCORE</strong><span class="muted">Example</span></div>
+      <div class="body">
+        <div class="score">58<small>/100</small></div>
+        <div style="margin:10px 0 14px;display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="pill bad">ABOVE MARKET</span><span class="stamp stay" style="font-size:32px;margin-right:4px" aria-hidden="true">STAY</span></div>
+        <p class="big" style="font-size:32px;margin:0">YOUR RENT WENT UP 11%.</p>
+        <p style="font-family:var(--body);font-weight:800;margin:6px 0 0">Similar units nearby are 4% cheaper.</p>
+      </div>
+      <figcaption>Illustration of the result screen, not a real customer.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== 1. CHECK ===================== -->
+<section id="check" aria-labelledby="h-check">
+  <div class="narrow">
+    <div class="sec-head">
+      <span class="step-no">STEP 1 · FREE</span>
+      <h2 id="h-check">Show us the letter</h2>
+      <p>A photo or PDF of your renewal or rent-increase notice. Or just type the numbers.</p>
+    </div>
+
+    <div id="ai-upload" hidden>
+      <input type="file" id="f-camera" accept="image/*" capture="environment" hidden>
+      <input type="file" id="f-file" accept="image/*,application/pdf" hidden>
+      <div class="stack">
+        <button type="button" class="btn block" id="b-camera">Take a photo of the letter</button>
+        <button type="button" class="btn ghost block" id="b-file">Upload photo or PDF</button>
+      </div>
+      <p class="hint" style="margin-top:10px">Your photo is sent to Anthropic's Claude AI only to read the numbers, then discarded. Cover account numbers if you like; we don't need them.</p>
+      <div class="or">OR TYPE IT</div>
+    </div>
+
+    <label class="f" for="f-paste">Paste the letter, or describe it</label>
+    <textarea class="in" id="f-paste" placeholder="e.g. Rent going from $1,850 to $2,050. Lease ends 3/31/2027, sign by 2/1/2027. ZIP 33301."></textarea>
+    <div class="row" style="margin-top:12px">
+      <button type="button" class="btn sm" id="b-read">Fill in the numbers ↓</button>
+    </div>
+    <div id="read-status" style="margin-top:14px" aria-live="polite"></div>
+
+    <div class="card pad" style="margin-top:26px">
+      <h3 style="margin-bottom:6px">Check the numbers</h3>
+      <p class="hint" style="margin:0 0 16px">The first three are required. Fix anything we got wrong.</p>
+      <div class="stack">
+        <div class="two keep">
+          <div><label class="f" for="l-cur">Current rent</label><div class="money"><span>$</span><input class="in" id="l-cur" inputmode="decimal" autocomplete="off"></div></div>
+          <div><label class="f" for="l-new">New rent</label><div class="money"><span>$</span><input class="in" id="l-new" inputmode="decimal" autocomplete="off"></div></div>
+        </div>
+        <div class="two keep">
+          <div><label class="f" for="l-zip">ZIP code</label><input class="in mono" id="l-zip" inputmode="numeric" maxlength="5" autocomplete="postal-code"></div>
+          <div><label class="f" for="l-months">New lease</label><div class="money"><input class="in" id="l-months" inputmode="numeric" value="12"><span>months</span></div></div>
+        </div>
+        <div class="two">
+          <div><label class="f" for="l-deadline">Reply-by date</label><input class="in" id="l-deadline" type="date"></div>
+          <div><label class="f" for="l-end">Lease ends <span class="opt">(optional)</span></label><input class="in" id="l-end" type="date"></div>
+        </div>
+        <div><label class="f" for="l-ll">Landlord or manager name <span class="opt">(optional, for your messages)</span></label><input class="in" id="l-ll" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <div class="card pad" style="margin-top:20px">
+      <h3 style="margin-bottom:16px">Five quick questions</h3>
+      <div class="stack" style="gap:20px">
+        <fieldset><legend class="f">Bedrooms</legend>
+          <div class="chips c5" id="q-br">
+            <button type="button" class="chip" data-v="0">Studio</button><button type="button" class="chip" data-v="1" aria-pressed="true">1</button><button type="button" class="chip" data-v="2">2</button><button type="button" class="chip" data-v="3">3</button><button type="button" class="chip" data-v="4">4+</button>
+          </div>
+        </fieldset>
+        <div><label class="f" for="q-years">How many years have you lived there?</label>
+          <input class="in mono" id="q-years" inputmode="numeric" value="1" style="max-width:140px"><p class="hint">Rounded down. Under a year = 0.</p></div>
+        <fieldset><legend class="f">Have you always paid on time?</legend><div class="chips c2" data-q="onTime"><button type="button" class="chip" data-v="1" aria-pressed="true">Yes</button><button type="button" class="chip" data-v="0">No</button></div></fieldset>
+        <fieldset><legend class="f">Do you own big furniture (sofa, bed frame, dresser)?</legend><div class="chips c2" data-q="furniture"><button type="button" class="chip" data-v="1" aria-pressed="true">Yes</button><button type="button" class="chip" data-v="0">No</button></div></fieldset>
+        <fieldset><legend class="f">If you moved, would you stay in the same area?</legend><div class="chips c2" data-q="stayArea"><button type="button" class="chip" data-v="1" aria-pressed="true">Yes</button><button type="button" class="chip" data-v="0">No</button></div></fieldset>
+      </div>
+    </div>
+
+    <div id="manual-wrap" class="card pad yellow" style="margin-top:20px" hidden>
+      <h3 style="margin-bottom:8px">No market data for this ZIP yet</h3>
+      <p class="small">Enter the rent of a similar unit nearby from a current listing. We'll label it "You entered" everywhere so it's never mistaken for official data.</p>
+      <label class="f" for="l-manual">Rent for a similar unit nearby</label>
+      <div class="money"><span>$</span><input class="in" id="l-manual" inputmode="decimal"><span>/mo</span></div>
+    </div>
+
+    <div style="margin-top:24px">
+      <button type="button" class="btn block" id="b-score">Get my free score ↓</button>
+      <div id="score-status" style="margin-top:14px" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 2. RESULT ===================== -->
+<section id="result" class="blue" aria-labelledby="h-result">
+  <div class="narrow">
+    <div class="sec-head">
+      <span class="step-no" style="background:var(--yellow);color:var(--ink)">STEP 2 · FREE</span>
+      <h2 id="h-result">Your Fair Rent Score</h2>
+    </div>
+    <div id="result-empty"><p style="color:#e6e9ff">Fill in Step 1 and your score appears here.</p></div>
+    <div id="result-body" hidden></div>
+  </div>
+</section>
+
+<!-- ===================== 3. UNLOCK ===================== -->
+<section id="get" class="alt" aria-labelledby="h-get">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="step-no">STEP 3</span>
+      <h2 id="h-get">Get the full playbook</h2>
+      <p>One-time payment. No subscription. Every estimate shows its source and how it was calculated.</p>
+    </div>
+    <div class="prices">
+      <div class="price">
+        <span class="eyebrow" style="margin:0;color:var(--ink)">Free</span><span class="amt">$0</span>
+        <ul><li>Fair Rent Score (0–100)</li><li>Your raise vs. similar units nearby</li><li>Preliminary STAY / GO</li><li>Shareable score card</li></ul>
+        <a class="btn ghost sm" href="#check">Start free</a>
+      </div>
+      <div class="price pick">
+        <span class="eyebrow" style="margin:0;color:var(--ink)">Negotiation Report</span><span class="amt" data-price="report">$19</span>
+        <ul><li>What losing you costs your landlord</li><li>Your counteroffer number, with reasoning</li><li>3 ready-to-send messages + non-price asks</li><li>Rent-cap and notice rules for your state</li><li>Deadline countdown + reminders</li></ul>
+        <a class="btn sm" data-buy="report" href="#">Buy the Report · $19</a>
+      </div>
+      <div class="price">
+        <span class="eyebrow" style="margin:0;color:var(--ink)">Report + Move Kit</span><span class="amt" data-price="move">$39</span>
+        <ul><li>Everything in the Report</li><li>True cost of moving + break-even</li><li>Sell or Ship: photo your furniture</li><li>Compare 3 apartments by true cost</li><li>Move-out photo checklist</li></ul>
+        <a class="btn ghost sm" data-buy="move" href="#">Buy Report + Move Kit · $39</a>
+      </div>
+    </div>
+    <div id="silarius-note" class="card pad" style="margin-top:20px;max-width:760px;background:var(--paper)">
+      <p style="margin:0;font-weight:800">When you buy, checkout and your card statement will say <span style="background:var(--yellow);padding:0 4px">Silarius LLC</span>. That's our parent company.</p>
+      <p class="mono tiny muted" style="margin:6px 0 0" id="pay-note">Secure checkout by Stripe. Right after paying, you get your own unlock code.</p>
+    </div>
+    <div style="margin-top:24px;max-width:560px" id="code-btn-wrap">
+      <button type="button" class="btn ink block" id="b-code" aria-expanded="false" aria-controls="codebox">Put Your Code In</button>
+    </div>
+
+    <div class="card pad codebox" id="codebox" style="max-width:560px;margin-top:16px" hidden>
+      <h3 style="margin-bottom:8px">Put your code in</h3>
+      <p class="small muted">Type the code you got right after paying. It opens everything you bought. Each code works on up to 3 of your devices.</p>
+      <form id="code-form" class="row" style="align-items:stretch">
+        <label class="f" for="code-in" style="position:absolute;left:-9999px">Unlock code</label>
+        <input class="in mono" id="code-in" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="STAY-XXXX-XXXX" style="flex:1;min-width:180px;text-transform:uppercase">
+        <button class="btn sm" type="submit">Unlock</button>
+      </form>
+      <div id="code-status" style="margin-top:12px" aria-live="polite"></div>
+    </div>
+
+    <div class="card pad" id="iap-box" style="max-width:560px;margin-top:20px" hidden>
+      <p class="small muted" style="margin:0 0 10px">Bought it before on this Apple ID?</p>
+      <button type="button" class="btn ghost sm" id="b-restore">Restore purchases</button>
+      <div id="iap-status" style="margin-top:12px" aria-live="polite"></div>
+    </div>
+    <p id="tier-line" class="mono small" style="margin-top:18px"></p>
+  </div>
+</section>
+
+<!-- ===================== 4. REPORT ===================== -->
+<section id="report" aria-labelledby="h-report">
+  <div class="narrow">
+    <div class="sec-head">
+      <span class="step-no">NEGOTIATION REPORT · $19</span>
+      <h2 id="h-report">Your negotiation numbers</h2>
+    </div>
+    <div id="report-body"></div>
+  </div>
+</section>
+
+<!-- ===================== 5. MOVE KIT ===================== -->
+<section id="move" class="alt" aria-labelledby="h-move">
+  <div class="narrow">
+    <div class="sec-head">
+      <span class="step-no">MOVE KIT · $39 WITH THE REPORT</span>
+      <h2 id="h-move">What would moving really cost?</h2>
+    </div>
+    <div id="move-body"></div>
+  </div>
+</section>
+
+<!-- ===================== TRUST ===================== -->
+<section id="trust" class="band" aria-labelledby="h-trust">
+  <div class="wrap" style="display:grid;gap:28px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));align-items:start">
+    <h2 id="h-trust">You stay in charge.</h2>
+    <ul class="trust">
+      <li><strong>We never contact your landlord.</strong><span class="muted small">You copy the message and send it yourself, when you're ready. We don't email, call or text anyone for you.</span></li>
+      <li><strong>No money from the other side.</strong><span class="muted small">No payments from landlords, property managers or moving companies. Ever.</span></li>
+      <li><strong>No account for the free score.</strong><span class="muted small">Your details stay on this device. Delete them anytime with one tap.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===================== FAQ ===================== -->
+<section id="faq" aria-labelledby="h-faq">
+  <div class="narrow">
+    <p class="eyebrow">Straight answers</p>
+    <h2 id="h-faq" style="margin-bottom:26px">Questions</h2>
+    <div class="faq">
+      <details><summary>Where does "market rent" come from?</summary><div class="a"><p>HUD Fair Market Rents: free public data from the U.S. Department of Housing and Urban Development for ZIPs in metro areas. They estimate what recent movers paid for a typical unit (rent plus utilities). It's a benchmark, not an appraisal of your apartment, and every result shows its source.</p></div></details>
+      <details><summary>Is this legal advice?</summary><div class="a"><p>No. STAY OR GO is not a law firm. The rules check is general information about rent caps and notice periods. For your situation, talk to a local tenant-rights group or attorney.</p></div></details>
+      <details><summary>Will my landlord know I used this?</summary><div class="a"><p>Only if you tell them. We never contact anyone. The messages are written in your voice for you to send.</p></div></details>
+      <details><summary>Where is my data stored?</summary><div class="a"><p>Only on this device. There's no account and no database. Photos you choose to scan are sent to Anthropic's Claude AI to read them and aren't kept by us. Tap "Delete my data" below to erase everything.</p></div></details>
+    </div>
+    <div class="row" style="margin-top:22px"><button type="button" class="link" id="b-delete">Delete my data</button></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="logo" style="font-size:24px">STAY OR GO</span>
+    <ul>
+      <li>We never contact your landlord. You stay in charge.</li>
+      <li>No money from landlords, property managers or moving companies.</li>
+      <li>No account needed for the free score. Delete your data anytime.</li>
+    </ul>
+    <p style="margin:0;max-width:820px">STAY OR GO is not a law firm and does not give legal advice. Estimates are not guarantees.</p>
+    <p style="margin:0" id="foot-links">© <span id="yr">2026</span> STAY OR GO</p>
+  </div>
+</footer>
+
+<script>
+/* =====================================================================
+   SETTINGS — edit these. Full instructions: STAY-OR-GO-SETUP.md
+   ===================================================================== */
+const CONFIG = {
+  // Website payments: Stripe Payment Links (already created in your Stripe account).
+  STRIPE_LINK_REPORT: "https://buy.stripe.com/aFa00jaE84cBfb41xNgnK0l",   // $19 Negotiation Report
+  STRIPE_LINK_MOVE: "https://buy.stripe.com/eVqbJ1h2w5gF0gaa4jgnK0m",     // $39 Report + Move Kit
+
+  // Your unlock-code helper (Cloudflare Worker). After each Stripe payment it
+  // makes a brand-new random code for that buyer, and checks codes typed here.
+  WORKER_URL: "https://stay-or-go.seanshwartsberg.workers.dev",
+
+  // Built-in placeholder rents for a few ZIPs so you can test. Always shown
+  // as "SAMPLE DATA". Set to false once real HUD rents are built in.
+  USE_SAMPLE_DATA: true,
+
+  // iPhone app (In-App Purchase product IDs from App Store Connect).
+  IAP_REPORT: "com.stayorgo.app.report",
+  IAP_MOVE: "com.stayorgo.app.movekit",
+
+  SUPPORT_EMAIL: "",   // shown in the footer, e.g. "help@yourdomain.com"
+  PRIVACY_URL: "https://seanshwarts123123.github.io/stay-or-go/#faq",     // required for the App Store
+  SITE_URL: "https://seanshwarts123123.github.io/stay-or-go/",        // printed on the share card
+};
+
+/* =====================================================================
+   BASICS
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+const round5 = (n) => Math.round(n / 5) * 5;
+const usd = (n) => (n < 0 ? "-" : "") + "$" + Math.abs(Math.round(n)).toLocaleString("en-US");
+const pct = (n, d = 0) => n.toFixed(d) + "%";
+const numIn = (v) => { const n = Number(String(v ?? "").replace(/[^0-9.]/g, "")); return String(v ?? "").trim() === "" || isNaN(n) ? null : n; };
+function daysUntil(iso) { if (!iso) return null; const d = new Date(iso + "T23:59:59"); return isNaN(d) ? null : Math.ceil((d - new Date()) / 864e5); }
+function prettyDate(iso) { if (!iso) return "—"; const d = new Date(iso + "T12:00:00"); return isNaN(d) ? iso : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
+const brLabel = (b) => (b === 0 ? "studio" : b + "-bedroom");
+const status = (el, kind, msg) => { el.innerHTML = msg ? `<div class="status ${kind}">${esc(msg)}</div>` : ""; };
+const spinner = (el, msg) => { el.innerHTML = `<span class="spin" role="status">${esc(msg)}</span>`; };
+
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const PLUG = window.SOG_PLUGINS || (window.Capacitor && window.Capacitor.Plugins) || {}; // SOG_PLUGINS is added by the iPhone app build
+
+/* Storage: everything stays on this device. */
+const KEY = "sog-state-v1", TIER = "sog-tier";
+let S = load() || fresh();
+function fresh() {
+  return {
+    done: false, letter: {}, ans: { br: 1, years: 1, onTime: true, furniture: true, stayArea: true },
+    market: null, manual: null,
+    asks: { longerLease: true, freeMonth: false, waivedFee: false, feeName: "renewal fee", repair: false, repairText: "" },
+    moveCosts: null, items: [], listings: [], listingTexts: ["", "", ""], checklist: {}, aiMessages: null,
+  };
+}
+function load() { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function getTier() { try { return localStorage.getItem(TIER) || "none"; } catch (e) { return "none"; } }
+function setTier(t, force) {
+  const rank = { none: 0, report: 1, move: 2 };
+  if (!force && rank[t] <= rank[getTier()]) return;
+  try { t === "none" ? localStorage.removeItem(TIER) : localStorage.setItem(TIER, t); } catch (e) {}
+  renderAll();
+}
+const hasReport = () => getTier() !== "none";
+const hasMove = () => getTier() === "move";
+
+const normCode = (c) => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+/* What the Worker can do (filled in at start-up from WORKER_URL/status). */
+let CAPS = { ai: false, market: false, codes: false };
+function deviceId() {
+  try { let d = localStorage.getItem("sog-device"); if (!d) { d = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem("sog-device", d); } return d; }
+  catch (e) { return "nostorage"; }
+}
+const prettyCode = (c) => { const n = normCode(c), m = n.match(/^(STAY|GO)([A-Z0-9]{4})([A-Z0-9]{4})$/); return m ? `${m[1]}-${m[2]}-${m[3]}` : n; };
+const workerUrl = (path) => CONFIG.WORKER_URL.replace(/\/+$/, "") + path;
+
+/* =====================================================================
+   MARKET RENT DATA
+   ===================================================================== */
+const SAMPLE = { // placeholder numbers for testing only — NOT real HUD figures
+  "33301": ["Fort Lauderdale, FL", [1700, 1900, 2350, 3050, 3600]],
+  "33304": ["Fort Lauderdale, FL", [1650, 1850, 2300, 2950, 3500]],
+  "33020": ["Hollywood, FL", [1500, 1700, 2100, 2700, 3200]],
+  "33130": ["Miami, FL", [1750, 1950, 2400, 3100, 3700]],
+  "10001": ["New York, NY", [2600, 2700, 3000, 3800, 4200]],
+  "90012": ["Los Angeles, CA", [1900, 2100, 2650, 3400, 3750]],
+  "60601": ["Chicago, IL", [1600, 1750, 2050, 2600, 3000]],
+  "78701": ["Austin, TX", [1500, 1650, 1950, 2550, 3000]],
+};
+async function lookupMarket(zip, br) {
+  if (CAPS.market) {
+    try { const j = await ai("market", { zip, bedrooms: br }); if (j.market) return j.market; } catch (e) { console.warn(e); }
+  }
+  if (CONFIG.USE_SAMPLE_DATA && SAMPLE[zip]) {
+    return { rent: SAMPLE[zip][1][Math.min(4, br)], areaName: SAMPLE[zip][0], zip, sample: true,
+      sourceName: "SAMPLE DATA (not real HUD figures)", url: "https://www.huduser.gov/portal/datasets/fmr.html",
+      note: "Placeholder numbers for testing only." };
+  }
+  return null;
+}
+const bench = () => (S.market ? S.market.rent : S.manual);
+function sourceHtml() {
+  if (S.market) return `Source: <a href="${esc(S.market.url)}" target="_blank" rel="noopener">${esc(S.market.sourceName)}</a>, ${esc(S.market.areaName)}, ZIP ${esc(S.market.zip)}.` +
+    (S.market.sample ? `<span class="sample" style="display:block;margin-top:4px">SAMPLE DATA: placeholder numbers for testing, not real market rents.</span>` : "") +
+    `<span style="display:block;margin-top:4px">${esc(S.market.note || "")}</span>`;
+  return "Source: you entered this comparable rent. It is not official data.";
+}
+
+/* =====================================================================
+   AI HELPER (optional Cloudflare Worker)
+   ===================================================================== */
+/* Ask once before any photo goes to the AI provider (also required by App Store rules). */
+function aiConsent() {
+  try { if (localStorage.getItem("sog-ai-ok") === "1") return true; } catch (e) {}
+  const ok = confirm("To read your photo, STAY OR GO sends it to Anthropic's Claude AI. It's used only to read it and isn't kept by us. Continue?");
+  if (ok) try { localStorage.setItem("sog-ai-ok", "1"); } catch (e) {}
+  return ok;
+}
+async function ai(task, payload) {
+  const r = await fetch(workerUrl("/ai"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task, ...payload }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "The AI helper didn't respond. Try again.");
+  return j;
+}
+async function fileToUpload(file, maxSide = 1600) {
+  if (file.type === "application/pdf") {
+    if (file.size > 3.5 * 1024 * 1024) throw new Error("That PDF is over 3.5 MB. Try a photo of the page instead.");
+    const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(",")[1]); fr.onerror = rej; fr.readAsDataURL(file); });
+    return { mediaType: "application/pdf", data: b64 };
+  }
+  if (!/^image\//.test(file.type) && !/\.(heic|heif|jpe?g|png|webp)$/i.test(file.name)) throw new Error("Use a photo or a PDF.");
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("Couldn't open that image. Try a JPG or PNG.")); i.src = URL.createObjectURL(file); });
+  const s = Math.min(1, maxSide / Math.max(img.width, img.height));
+  const c = document.createElement("canvas"); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return { mediaType: "image/jpeg", data: c.toDataURL("image/jpeg", 0.85).split(",")[1] };
+}
+
+/* Simple text reader used without the AI helper. You confirm every field anyway. */
+function parseBasic(t) {
+  const money = [...t.matchAll(/\$\s?([\d,]{3,6}(?:\.\d{2})?)/g)].map((m) => Number(m[1].replace(/,/g, ""))).filter((n) => n >= 200 && n <= 20000);
+  const zip = (t.match(/\b(\d{5})(?:-\d{4})?\b/) || [])[1] || null;
+  const dates = [...t.matchAll(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b|\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})\b/gi)].map((m) => {
+    const d = m[1] ? new Date(`${m[3].length === 2 ? "20" + m[3] : m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}T12:00:00`) : new Date(`${m[4]} ${m[5]}, ${m[6]} 12:00`);
+    return isNaN(d) ? null : d.toISOString().slice(0, 10);
+  }).filter(Boolean).sort();
+  return {
+    currentRent: money.length >= 2 ? Math.min(money[0], money[1]) : null,
+    newRent: money.length >= 2 ? Math.max(money[0], money[1]) : money[0] || null,
+    noticeDeadline: dates[0] || null, leaseEndDate: dates.length > 1 ? dates[dates.length - 1] : null,
+    zip, newLeaseMonths: Number((t.match(/(\d{1,2})[- ]month/i) || [])[1]) || null, landlordName: null,
+  };
+}
+</script>
+
+<script>
+/* =====================================================================
+   THE MATH — every function returns its numbers plus plain-English steps
+   ===================================================================== */
+function fairRentScore(cur, nr, b) {
+  const incD = nr - cur, incP = (incD / cur) * 100, ratio = nr / b;
+  const gapPts = clamp(100 - ((ratio - 0.9) / 0.4) * 100, 0, 100);
+  const raisePts = clamp(100 - (incP - 3) * 8, 0, 100);
+  const score = Math.round(0.7 * gapPts + 0.3 * raisePts);
+  const label = score >= 80 ? "Fair" : score >= 60 ? "A bit steep" : score >= 40 ? "Above market" : "Way above market";
+  const gapP = ((nr - b) / nr) * 100;
+  const headline = `Your rent went ${incP >= 0 ? "up" : "down"} ${Math.abs(Math.round(incP))}%.`;
+  const subhead = Math.abs(gapP) < 1 ? "That's right at the local benchmark for similar units."
+    : gapP > 0 ? `Similar units nearby are ${Math.round(gapP)}% cheaper.` : `Similar units nearby run ${Math.round(-gapP)}% higher.`;
+  const steps = [
+    `Increase: ${usd(nr)} − ${usd(cur)} = ${usd(incD)} a month (${pct(incP, 1)}).`,
+    `Benchmark for a similar unit in your ZIP: ${usd(b)}. Your new rent is ${ratio.toFixed(2)}× that.`,
+    `Price points: 0.9× the benchmark or less scores 100, 1.3× or more scores 0 → ${Math.round(gapPts)}.`,
+    `Raise points: a raise of 3% or less scores 100, minus 8 for each extra percent → ${Math.round(raisePts)}.`,
+    `Fair Rent Score = 70% price points + 30% raise points = ${score}.`,
+  ];
+  return { score, label, incP, incD, gapP, headline, subhead, steps };
+}
+
+function leverage(nr, b, a) {
+  const br = Math.max(1, a.br), wear = 1 + Math.min(a.years, 6) * 0.05;
+  const cleaning = 250 + 100 * br, paint = (600 + 400 * br) * wear;
+  const turnover = Math.round(cleaning + paint), listing = Math.round(200 + nr * 0.25);
+  const vLow = nr, vHigh = nr * 2, low = vLow + turnover + listing, high = vHigh + turnover + listing, mid = Math.round((low + high) / 2);
+  const gapP = ((nr - b) / nr) * 100;
+  const factors = [
+    ["Starting point", 35],
+    [`${a.years} year${a.years === 1 ? "" : "s"} as a tenant`, Math.round(Math.min(a.years, 4) * 6)],
+    [a.onTime ? "Always paid on time" : "Some late payments", a.onTime ? 20 : 0],
+    [gapP > 0 ? `New rent is ${Math.round(gapP)}% above the benchmark` : "New rent is at or below the benchmark", gapP > 0 ? Math.round(Math.min(20, gapP * 2)) : 0],
+  ];
+  const score = clamp(factors.reduce((s, f) => s + f[1], 0), 0, 100);
+  const label = score >= 70 ? "Strong" : score >= 50 ? "Medium" : "Low";
+  const steps = [
+    `Vacancy: 1–2 months with no rent at ${usd(nr)} = ${usd(vLow)}–${usd(vHigh)}.`,
+    `Cleaning (${usd(cleaning)}) + painting (${usd(paint)}), scaled up ${Math.round((wear - 1) * 100)}% for a ${a.years}-year stay = ${usd(turnover)}.`,
+    `Listing and leasing (ads, showings, screening, paperwork): $200 + 25% of a month = ${usd(listing)}.`,
+    `Total cost to replace you: ${usd(low)}–${usd(high)} (midpoint ${usd(mid)}).`,
+    "Leverage adds points for tenure (6 per year, up to 4 years), on-time history (20) and how far the new rent sits above the benchmark (2 per percent, up to 20).",
+  ];
+  return { vLow, vHigh, turnover, listing, low, high, mid, score, label, factors, steps };
+}
+
+function counteroffer(cur, nr, b, lev) {
+  if (nr <= cur) return { counter: nr, monthly: 0, yearly: 0, steps: ["Your rent isn't going up, so there's no price to counter. Ask for non-price wins instead."] };
+  const marketAbove = b >= nr;
+  const floor = marketAbove ? cur : Math.max(cur, Math.min(b, nr));
+  let share = 0.25 + 0.5 * (lev.score / 100);
+  if (marketAbove) share *= 0.5;
+  let conc = (nr - floor) * share;
+  const cap = lev.mid / 12, capped = conc > cap;
+  conc = Math.min(conc, cap);
+  const counter = Math.max(round5(nr - conc), round5(cur));
+  const monthly = nr - counter;
+  return {
+    counter, monthly, yearly: monthly * 12,
+    steps: [
+      marketAbove ? `The benchmark (${usd(b)}) is at or above your new rent, so the price case is weaker. We aim between your current rent and the new rent.`
+        : `Floor: the higher of your current rent (${usd(cur)}) and the local benchmark (${usd(b)}) = ${usd(floor)}.`,
+      `Gap between the new rent and the floor: ${usd(nr - floor)}.`,
+      `With ${lev.label.toLowerCase()} leverage (${lev.score}), we ask back ${Math.round(share * 100)}% of that gap.`,
+      capped ? `Capped at ${usd(cap)}/mo: a year of discount shouldn't cost the landlord more than replacing you (${usd(lev.mid)}).`
+        : `That stays under the ${usd(cap)}/mo cap (the landlord's cost to replace you, spread over 12 months).`,
+      `Rounded to the nearest $5: ${usd(counter)}/mo, saving ${usd(monthly)}/mo (${usd(monthly * 12)} a year) if accepted.`,
+    ],
+  };
+}
+
+const MOVE_FIELDS = [
+  ["newPlaceRent", "Rent at the new place", "Defaults to the market benchmark for your ZIP and bedrooms.", "/mo"],
+  ["deposit", "Security deposit", "Typical: one month's rent."],
+  ["depositBack", "Deposit you get back", "Your current deposit, if you expect it back. Subtracted from the total."],
+  ["applicationFees", "Application fees", "Typical: about $50 each, 3 applications."],
+  ["movers", "Movers or truck", "Truck (~$250 + $100/bedroom) without big furniture; movers (~$600 + $450/bedroom) with it. +30% if leaving the area."],
+  ["overlapRent", "Overlapping rent", "Typical: half a month paying both places."],
+  ["utilitySetup", "Utility setup", "Activation fees for power, internet and water."],
+  ["supplies", "Moving supplies", "Boxes, tape, cleaning supplies."],
+  ["daysOff", "Days off work", "Days of work you'd miss.", "days"],
+  ["dailyPay", "Pay for one day", "What a day off costs you."],
+  ["leaseMonths", "Renewal lease length", "Length of the lease you were offered.", "months"],
+];
+function defaultMove() {
+  const b = bench() || S.letter.newRent, br = Math.max(1, S.ans.br);
+  const movers = S.ans.furniture ? 600 + 450 * br : 250 + 100 * br;
+  return { newPlaceRent: Math.round(b), deposit: Math.round(b), depositBack: Math.round(S.letter.currentRent || 0), applicationFees: 150,
+    movers: Math.round(S.ans.stayArea ? movers : movers * 1.3), overlapRent: Math.round(b * 0.5), utilitySetup: 150, supplies: 100,
+    daysOff: 2, dailyPay: 200, leaseMonths: S.letter.newLeaseMonths || 12 };
+}
+function breakEven(renewal, m) {
+  const lines = [["Security deposit (new place)", m.deposit], ["Deposit you get back", -m.depositBack], ["Application fees", m.applicationFees],
+    ["Movers or truck", m.movers], ["Overlapping rent", m.overlapRent], ["Utility setup", m.utilitySetup], ["Time off work", m.daysOff * m.dailyPay], ["Supplies", m.supplies]];
+  const total = Math.max(0, lines.reduce((s, l) => s + l[1], 0));
+  const save = renewal - m.newPlaceRent;
+  const months = save > 0 ? Math.ceil(total / save) : null;
+  const verdict = months !== null && months <= m.leaseMonths ? "GO" : "STAY";
+  const sentence = save <= 0
+    ? `A comparable place costs ${usd(-save)}/mo more than your renewal, and moving costs ${usd(total)}, so moving never pays off. STAY and negotiate.`
+    : `Moving saves ${usd(save)}/mo but costs ${usd(total)}, so it pays off in ${months} month${months === 1 ? "" : "s"}. Your lease is ${m.leaseMonths} months: ${verdict}.`;
+  return { lines, total, save, months, verdict, sentence };
+}
+
+const UTIL_EST = [110, 140, 180, 220, 260], UTIL_SHARE = { electric: 0.45, water: 0.2, internet: 0.25, gas: 0.1 };
+function trueMonthly(l) {
+  const base = UTIL_EST[clamp(l.bedrooms ?? 1, 0, 4)];
+  const inc = (l.utilitiesIncluded || []).reduce((s, u) => s + (UTIL_SHARE[u] || 0), 0);
+  const utilities = Math.round(base * (1 - clamp(inc, 0, 1))), spread = Math.round((l.oneTimeFees || 0) / 12);
+  return { utilities, spread, total: (l.rent || 0) + (l.parking || 0) + (l.petFees || 0) + (l.otherMonthly || 0) + utilities + spread };
+}
+function parseListingBasic(t, i) {
+  const m = (re) => Number(((t.match(re) || [])[1] || "0").replace(/,/g, ""));
+  return { name: `Listing ${i + 1}`, rent: m(/\$\s?([\d,]{3,6})/), bedrooms: /studio/i.test(t) ? 0 : Number((t.match(/(\d)\s*(?:bd|bed|br)/i) || [])[1] || S.ans.br),
+    parking: m(/parking[^$\n.]{0,15}\$\s?([\d,]+)/i), petFees: m(/pet rent[^$\n.]{0,15}\$\s?([\d,]+)/i), otherMonthly: m(/(?:amenity|trash)[^$\n.]{0,15}\$\s?([\d,]+)/i),
+    oneTimeFees: m(/(?:admin|application)[^$\n.]{0,15}\$\s?([\d,]+)/i),
+    utilitiesIncluded: ["electric", "water", "internet", "gas"].filter((u) => new RegExp(`${u}[^.\\n]{0,30}included|included[^.\\n]{0,30}${u}`, "i").test(t)) };
+}
+
+/* =====================================================================
+   RULES CHECK — general information, NOT legal advice.
+   Last reviewed November 2026. Have a tenant attorney or tenant-rights
+   group review this before launch, and update RULES_REVIEWED.
+   ===================================================================== */
+const RULES_REVIEWED = "November 2026";
+const RULES = {
+  CA: { n: "California", cap: "Statewide cap (Tenant Protection Act, AB 1482) for covered units: 5% plus local inflation (CPI) per year, never more than 10%. Many buildings under 15 years old and some single-family homes or condos owned by individuals are exempt.", notice: "At least 30 days' written notice for an increase of 10% or less; 90 days for more than 10% (month-to-month).", local: "Los Angeles, San Francisco, Oakland, Berkeley, San José and other cities have stricter local rent control.", max: 10, base: "5% + CPI" },
+  OR: { n: "Oregon", cap: "Statewide cap: 7% plus CPI per year, never more than 10%. Oregon publishes the exact maximum each year. Buildings under 15 years old are exempt.", notice: "At least 90 days' written notice, and generally no increase in the first year of a tenancy.", max: 10, base: "7% + CPI" },
+  WA: { n: "Washington", cap: "Statewide cap (2025 law): 7% plus CPI per year, never more than 10%, for most units. Newer buildings and some other housing are exempt.", notice: "At least 90 days' written notice before an increase.", local: "Some cities add their own notice or relocation-assistance rules.", max: 10, base: "7% + CPI" },
+  NY: { n: "New York", cap: "No general statewide cap. Rent-stabilized apartments (mostly NYC and some suburbs) have annual limits set by a Rent Guidelines Board.", notice: "For increases of 5% or more: 30 days' notice if you've lived there under a year, 60 days for 1–2 years, 90 days for 2+ years.", local: "Check whether your unit is rent-stabilized with NYS Homes and Community Renewal." },
+  NJ: { n: "New Jersey", cap: "No statewide cap, but over 100 municipalities have their own rent-control ordinances.", notice: "Increases generally need proper written notice (often a full rental period) before taking effect.", local: "Check your town's rent-control ordinance." },
+  DC: { n: "District of Columbia", cap: "Many older buildings are rent-controlled with an annual cap set by the Rent Administrator.", notice: "At least 30 days' written notice." },
+  FL: { n: "Florida", local: "State law preempts local rent control except in narrow emergency conditions, and preempts most local tenant notice rules. Your lease terms govern renewals. For month-to-month tenancies, either side generally needs 30 days' notice to end the tenancy." },
+  TX: { n: "Texas", local: "State law preempts local rent control. Your lease governs the notice period." },
+  GA: { n: "Georgia", local: "State law preempts local rent control. Your lease governs the notice period." },
+  IL: { n: "Illinois", local: "State law preempts local rent control. Your lease governs the notice period." },
+  CO: { n: "Colorado", notice: "Generally at least 60 days' written notice, and no more than one increase in 12 months.", local: "State law prohibits local rent control." },
+  MA: { n: "Massachusetts", local: "Rent control has been banned statewide since 1994. Your lease governs the notice period." },
+  MD: { n: "Maryland", local: "No statewide cap, but Montgomery County and Prince George's County have local rent-increase caps." },
+  MN: { n: "Minnesota", local: "No statewide cap. St. Paul has a local rent-stabilization ordinance with a cap and exemptions." },
+  ME: { n: "Maine", notice: "At least 45 days' written notice of a rent increase.", local: "Portland has a local rent-control ordinance." },
+  DE: { n: "Delaware", notice: "At least 60 days' written notice before the lease ends." },
+  NV: { n: "Nevada", notice: "At least 45 days' written notice for periodic (month-to-month) tenancies." },
+};
+const ZIP3 = [[5,5,"NY"],[10,27,"MA"],[28,29,"RI"],[30,38,"NH"],[39,49,"ME"],[50,54,"VT"],[55,55,"MA"],[56,59,"VT"],[60,69,"CT"],[70,89,"NJ"],[100,149,"NY"],[150,196,"PA"],[197,199,"DE"],[200,200,"DC"],[201,201,"VA"],[202,205,"DC"],[206,219,"MD"],[220,246,"VA"],[247,268,"WV"],[270,289,"NC"],[290,299,"SC"],[300,319,"GA"],[320,349,"FL"],[350,369,"AL"],[370,385,"TN"],[386,397,"MS"],[398,399,"GA"],[400,427,"KY"],[430,459,"OH"],[460,479,"IN"],[480,499,"MI"],[500,528,"IA"],[530,549,"WI"],[550,567,"MN"],[569,569,"DC"],[570,577,"SD"],[580,588,"ND"],[590,599,"MT"],[600,629,"IL"],[630,658,"MO"],[660,679,"KS"],[680,693,"NE"],[700,714,"LA"],[716,729,"AR"],[730,749,"OK"],[750,799,"TX"],[800,816,"CO"],[820,831,"WY"],[832,838,"ID"],[840,847,"UT"],[850,865,"AZ"],[870,884,"NM"],[885,885,"TX"],[889,898,"NV"],[900,961,"CA"],[967,968,"HI"],[970,979,"OR"],[980,994,"WA"],[995,999,"AK"]];
+function stateFromZip(z) { if (!/^\d{5}$/.test(z || "")) return null; const p = +z.slice(0, 3); const f = ZIP3.find(([a, b]) => p >= a && p <= b); return f ? f[2] : null; }
+
+/* =====================================================================
+   MESSAGE TEMPLATES (the AI helper rewrites these when it's on)
+   ===================================================================== */
+function msgInput(c) {
+  return { landlordName: S.letter.landlordName || null, current: S.letter.currentRent, newRent: S.letter.newRent, counter: c.counter, benchmark: bench(),
+    benchmarkSource: S.market && !S.market.sample ? S.market.sourceName : "", years: S.ans.years, onTime: S.ans.onTime, bedrooms: S.ans.br, asks: S.asks };
+}
+function templates(m) {
+  const hi = m.landlordName ? `Hi ${m.landlordName},` : "Hi,";
+  const tenure = m.years >= 1 ? `${m.years} year${m.years === 1 ? "" : "s"}` : "the past year";
+  const record = m.onTime ? " and have always paid on time" : "";
+  const market = m.newRent > m.benchmark ? `Similar ${m.bedrooms === 0 ? "studios" : m.bedrooms + "-bedroom units"} in the area are around ${usd(m.benchmark)}${m.benchmarkSource ? ` (${m.benchmarkSource})` : ""}.` : "";
+  const a = m.asks, asks = [];
+  if (a.longerLease) asks.push(`I'd happily sign a longer lease (18–24 months) at ${usd(m.counter)} a month.`);
+  if (a.freeMonth) asks.push("If the rent has to stay where you set it, one free month on the renewal would close most of the gap.");
+  if (a.waivedFee) asks.push(`I'd also ask that the ${a.feeName || "renewal fee"} be waived.`);
+  if (a.repair && (a.repairText || "").trim()) asks.push(`Separately, I'd like the ${a.repairText.trim()} fixed before the new lease starts.`);
+  const ab = asks.length ? "\n\n" + asks.join(" ") : "";
+  const tidy = (s) => s.replace(/ {2,}/g, " ").replace(/\n{3,}/g, "\n\n");
+  return [
+    { tone: "Friendly", subject: "Lease renewal: a quick request", body: tidy(`${hi}\n\nThanks for sending the renewal offer. I've really liked living here for ${tenure}${record}, and I'd like to stay.\n\nThe increase from ${usd(m.current)} to ${usd(m.newRent)} is more than I budgeted for. ${market} Would you consider ${usd(m.counter)} a month instead?${ab}\n\nHappy to talk it through. Thanks for considering it.`) },
+    { tone: "Firm", subject: `Renewal counteroffer: ${usd(m.counter)}/month`, body: tidy(`${hi}\n\nI'm writing about the renewal offer raising my rent from ${usd(m.current)} to ${usd(m.newRent)}.\n\nI've been a reliable tenant for ${tenure}${record}. ${market} Replacing a tenant also means vacancy, cleaning, painting and listing costs.\n\nI'd like to renew at ${usd(m.counter)} a month.${ab}\n\nPlease let me know by reply so I can plan accordingly.`) },
+    { tone: "Ready to move", subject: "Renewal decision", body: tidy(`${hi}\n\nI've reviewed the renewal at ${usd(m.newRent)} a month and compared it with other places nearby. ${market}\n\nI'd prefer to stay, and I'll sign today at ${usd(m.counter)} a month.${ab}\n\nIf that doesn't work, I'll plan to move out at the end of my current lease and will give notice as my lease requires. Please let me know which way we're going.`) },
+  ];
+}
+</script>
+
+<script>
+/* =====================================================================
+   SHARED UI PIECES
+   ===================================================================== */
+function howHtml(steps, assumptions, source) {
+  return `<details class="how"><summary>How we calculated this</summary><div class="in-how"><ol>${steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` +
+    (assumptions && assumptions.length ? `<ul style="margin-top:10px">${assumptions.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : "") +
+    (source ? `<div class="src">${source}</div>` : "") + `</div></details>`;
+}
+function countdownHtml(d) {
+  const n = daysUntil(d);
+  if (n === null) return `<p class="muted small" style="margin:0">No reply-by date entered. Check your lease for how much notice you must give before it ends.</p>`;
+  return `<div class="countdown"><div class="big ${n <= 7 ? "urgent" : ""}">${Math.max(0, n)}</div><div><div class="big" style="font-size:24px;text-transform:uppercase">${n < 0 ? "Deadline passed" : n === 1 ? "day left" : "days left"}</div><div class="mono tiny muted">Reply by ${esc(prettyDate(d))}</div>${n < 0 ? `<p class="small" style="margin:4px 0 0">You can still negotiate: many landlords would rather talk than turn the unit over.</p>` : ""}</div></div>`;
+}
+const meterHtml = (v, label, lo, hi) => `<div class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${v}" aria-label="${esc(label)}"><i style="width:${v}%"></i></div><div class="meter-l"><span>${esc(lo)}</span><span>${esc(hi)}</span></div>`;
+const lockSvg = `<svg class="padlock" viewBox="0 0 24 24" fill="none" stroke="#0d1024" stroke-width="2.4" aria-hidden="true"><rect x="4" y="10" width="16" height="11"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`;
+const needScore = () => `<div class="card pad"><p style="margin:0 0 14px">Get your free Fair Rent Score first. It takes about two minutes.</p><a class="btn sm" href="#check">Start with Step 1 ↑</a></div>`;
+
+function calc() {
+  const cur = S.letter.currentRent, nr = S.letter.newRent, b = bench();
+  const sc = fairRentScore(cur, nr, b), lev = leverage(nr, b, S.ans), co = counteroffer(cur, nr, b, lev);
+  const be = breakEven(nr, S.moveCosts || defaultMove());
+  return { cur, nr, b, sc, lev, co, be };
+}
+
+/* =====================================================================
+   STEP 2 · RESULT
+   ===================================================================== */
+function renderResult() {
+  const body = $("#result-body"), empty = $("#result-empty");
+  if (!S.done) { body.hidden = true; empty.hidden = false; return; }
+  body.hidden = false; empty.hidden = true;
+  const { cur, nr, b, sc, be } = calc();
+  const area = S.market ? S.market.areaName : `ZIP ${S.letter.zip}`;
+  const dm = S.moveCosts || defaultMove();
+  body.innerHTML = `
+    <div class="card shadow" style="color:var(--ink);padding:20px">
+      <div class="score">${sc.score}<small>/100</small></div>
+      <p style="margin:12px 0 14px"><span class="pill ${sc.score >= 60 ? "good" : "bad"}">${esc(sc.label.toUpperCase())}</span></p>
+      ${meterHtml(sc.score, "Fair Rent Score", "Way above market", "Fair")}
+      <h3 style="font-size:40px;margin:18px 0 4px">${esc(sc.headline)}</h3>
+      <p style="font-weight:800;font-size:19px;margin:0">${esc(sc.subhead)}</p>
+      <dl class="trio"><div><dt>Was</dt><dd>${usd(cur)}</dd></div><div><dt>Now</dt><dd>${usd(nr)}</dd></div><div><dt>Nearby*</dt><dd>${usd(b)}</dd></div></dl>
+      <p class="mono tiny muted" style="margin:10px 0 0">*Typical ${brLabel(S.ans.br)} in ${esc(area)}${S.market && S.market.sample ? ` <span class="sample">(SAMPLE DATA)</span>` : ""}${!S.market ? " (you entered)" : ""}</p>
+    </div>
+    <div class="row" style="margin-top:26px"><button type="button" class="btn" id="b-share">Share my score ↓</button></div>
+    <p class="fine">Saves an image with your score and percentages. No address or rent amounts.</p>
+    ${howHtml(sc.steps, ["HUD Fair Market Rents are \"gross rent\" (rent + typical utilities) at the 40th percentile of what recent movers paid. If your rent excludes utilities, the true gap may be bigger than shown.", "It's a benchmark for a typical unit, not an appraisal of yours."], sourceHtml())}
+    <div class="card pad" style="margin-top:22px;color:var(--ink)">
+      <p class="eyebrow">First look</p>
+      <div class="stamp-box"><span class="stamp ${be.verdict === "STAY" ? "stay" : "go"} pop" style="font-size:84px" role="img" aria-label="Verdict: ${be.verdict}">${be.verdict}</span>
+      <p class="mono tiny muted" style="margin:26px 0 0">PRELIMINARY · typical move costs</p></div>
+      <p style="font-weight:800;font-size:18px;margin:14px 0 0">${esc(be.sentence)}</p>
+      ${howHtml([`Comparable place: ${usd(dm.newPlaceRent)}/mo (the local benchmark).`, ...be.lines.map((l) => `${l[0]}: ${usd(l[1])}`), `Total moving cost ${usd(be.total)}; monthly saving ${usd(be.save)}.`, "GO only if the savings repay the move within your new lease."], ["Typical costs, not quotes. The Move Kit lets you edit every number."])}
+    </div>
+    <div class="card pad" style="margin-top:22px;color:var(--ink)"><p class="eyebrow">Your deadline</p>${countdownHtml(S.letter.noticeDeadline)}</div>
+    <div style="margin-top:26px">${hasReport() ? `<a class="btn block" href="#report">Open my Negotiation Report ↓</a>` : `<a class="btn block" href="#get">Get my counteroffer number ↓</a>`}</div>`;
+  $("#b-share").onclick = shareCard;
+}
+
+/* =====================================================================
+   SHARE CARD (1080×1350 image)
+   ===================================================================== */
+async function shareCard() {
+  const { sc } = calc();
+  const area = S.market ? S.market.areaName : `ZIP ${S.letter.zip}`;
+  const W = 1080, H = 1350, D = '"Big Shoulders Display", Impact, sans-serif', M = '"IBM Plex Mono", Menlo, monospace', B = '"Public Sans", Arial, sans-serif';
+  try { await Promise.all([document.fonts.load(`900 100px "Big Shoulders Display"`), document.fonts.load(`600 30px "IBM Plex Mono"`), document.fonts.load(`800 30px "Public Sans"`)]); } catch (e) {}
+  const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d"); g.textBaseline = "top";
+  g.fillStyle = "#1f3bd1"; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#fff"; g.font = `900 64px ${D}`; g.fillText("STAY OR GO", 80, 72);
+  g.font = `600 30px ${M}`; const tag = "MY FAIR RENT SCORE", tw = g.measureText(tag).width;
+  g.fillStyle = "#ffd23f"; g.fillRect(80, 170, tw + 36, 54); g.fillStyle = "#0d1024"; g.fillText(tag, 98, 182);
+  const x = 80, y = 260, w = W - 160, h = 830;
+  g.fillStyle = "#142a9e"; g.fillRect(x + 18, y + 18, w, h); g.fillStyle = "#fff"; g.fillRect(x, y, w, h);
+  g.lineWidth = 8; g.strokeStyle = "#0d1024"; g.strokeRect(x, y, w, h);
+  g.fillStyle = "#0d1024"; g.font = `900 320px ${D}`; const s = String(sc.score); g.fillText(s, x + 56, y + 50);
+  const sw = g.measureText(s).width; g.font = `900 90px ${D}`; g.fillStyle = "#555b73"; g.fillText("/100", x + 72 + sw, y + 256);
+  g.font = `900 52px ${D}`; const lab = sc.label.toUpperCase(), lw = g.measureText(lab).width;
+  g.fillStyle = sc.score >= 60 ? "#0f8a4f" : "#c8211b"; g.fillRect(x + 56, y + 390, lw + 40, 74); g.fillStyle = "#fff"; g.fillText(lab, x + 76, y + 400);
+  g.fillStyle = "#0d1024"; g.font = `900 84px ${D}`; let ty = wrap(g, sc.headline.toUpperCase(), x + 56, y + 500, w - 112, 82);
+  g.font = `800 40px ${B}`; wrap(g, sc.subhead, x + 56, ty + 16, w - 112, 52);
+  g.font = `600 26px ${M}`; g.fillStyle = "#555b73"; g.fillText(area.slice(0, 48).toUpperCase(), x + 56, y + h - 64);
+  g.fillStyle = "#ffd23f"; g.font = `900 56px ${D}`; g.fillText("CHECK YOURS FREE →", 80, 1150);
+  g.fillStyle = "#c3cafc"; g.font = `600 28px ${M}`; g.fillText((CONFIG.SITE_URL || (location.protocol.startsWith("http") ? location.host + location.pathname : "")).replace(/^https?:\/\//, "").slice(0, 52), 80, 1228);
+  const dataUrl = c.toDataURL("image/png"), name = `fair-rent-score-${sc.score}.png`;
+  await shareImage(dataUrl, name);
+}
+function wrap(g, text, x, y, maxW, lh) {
+  let line = "";
+  for (const w of text.split(" ")) { const t = line ? line + " " + w : w; if (g.measureText(t).width > maxW && line) { g.fillText(line, x, y); line = w; y += lh; } else line = t; }
+  if (line) { g.fillText(line, x, y); y += lh; }
+  return y;
+}
+async function shareImage(dataUrl, name) {
+  const b64 = dataUrl.split(",")[1];
+  if (NATIVE && PLUG.Filesystem && PLUG.Share) {
+    try {
+      const r = await PLUG.Filesystem.writeFile({ path: name, data: b64, directory: "CACHE" });
+      await PLUG.Share.share({ title: "My Fair Rent Score", files: [r.uri] });
+      return;
+    } catch (e) { if (String(e).includes("cancel")) return; console.warn(e); }
+  }
+  try {
+    const blob = await (await fetch(dataUrl)).blob(), file = new File([blob], name, { type: "image/png" });
+    if (matchMedia("(pointer: coarse)").matches && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "My Fair Rent Score" }); return; }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  const a = document.createElement("a"); a.href = dataUrl; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* =====================================================================
+   STEP 3 · UNLOCK (codes on the web, In-App Purchase in the iPhone app)
+   ===================================================================== */
+function renderUnlock() {
+  const t = getTier();
+  $("#tier-line").innerHTML = t === "move" ? `<span class="badge win">UNLOCKED: REPORT + MOVE KIT</span>` : t === "report" ? `<span class="badge win">UNLOCKED: NEGOTIATION REPORT</span>` : "";
+  $$("[data-buy]").forEach((a) => {
+    const which = a.dataset.buy, owned = which === "report" ? hasReport() : hasMove();
+    if (owned) { a.textContent = "Unlocked ✓"; a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); return; }
+    if (NATIVE) { a.href = "#"; }
+    else { const link = which === "report" ? CONFIG.STRIPE_LINK_REPORT : CONFIG.STRIPE_LINK_MOVE; a.href = link || "#"; if (link) { a.target = "_blank"; a.rel = "noopener"; } }
+  });
+}
+/* Unlock codes (website): each Stripe purchase gets its own random code from the helper. */
+async function redeem(raw) {
+  const el = $("#code-status"), code = normCode(raw);
+  if (!code) { status(el, "err", "Type the code from your payment confirmation."); return; }
+  if (!CONFIG.WORKER_URL) { status(el, "err", "Code unlock isn't set up on this page yet. (Owner: add WORKER_URL in CONFIG.)"); return; }
+  spinner(el, "Checking your code…");
+  try {
+    const r = await fetch(workerUrl("/redeem"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, device: deviceId() }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.tier) { status(el, "err", j.error || "That code didn't work. Check for typos, or contact us with your receipt."); return; }
+    try { localStorage.setItem("sog-code", prettyCode(code)); } catch (e) {}
+    setTier(j.tier);
+    status(el, "ok", j.tier === "move" ? "Unlocked: Negotiation Report + Move Kit." : "Unlocked: Negotiation Report.");
+    $("#code-in").value = "";
+    setTimeout(() => { $("#codebox").hidden = true; $("#b-code").setAttribute("aria-expanded", "false"); (S.done ? $("#report") : $("#check")).scrollIntoView({ behavior: "smooth" }); }, 900);
+  } catch (e) { status(el, "err", "Couldn't reach the unlock server. Check your connection and try again."); }
+}
+/* "Put Your Code In" button: shows the code box (can be called from anywhere on the page). */
+function openCodeBox() {
+  const box = $("#codebox"), btn = $("#b-code");
+  box.hidden = false; btn.setAttribute("aria-expanded", "true");
+  $("#get").scrollIntoView({ behavior: "smooth", block: "start" });
+  setTimeout(() => { box.scrollIntoView({ behavior: "smooth", block: "center" }); $("#code-in").focus(); }, 350);
+}
+$("#b-code").addEventListener("click", () => { const box = $("#codebox"); if (box.hidden) openCodeBox(); else { box.hidden = true; $("#b-code").setAttribute("aria-expanded", "false"); } });
+document.addEventListener("click", (e) => { if (e.target.closest("[data-open-code]")) { e.preventDefault(); openCodeBox(); } });
+$("#code-form").addEventListener("submit", (e) => { e.preventDefault(); redeem($("#code-in").value); });
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("[data-buy]");
+  if (!a || a.getAttribute("aria-disabled") === "true") return;
+  if (NATIVE) { e.preventDefault(); iapBuy(a.dataset.buy); return; }
+  if (a.getAttribute("href") === "#") { e.preventDefault(); status($("#code-status"), "err", "Payments aren't set up on this page yet. (Owner: add your Stripe Payment Links in CONFIG.)"); }
+});
+
+/* In-App Purchase (iPhone app only) via cordova-plugin-purchase. */
+let IAP = null;
+function initIAP() {
+  const C = window.CdvPurchase; if (!C) return;
+  IAP = C.store;
+  const P = C.Platform.APPLE_APPSTORE, NC = C.ProductType.NON_CONSUMABLE;
+  IAP.register([{ id: CONFIG.IAP_REPORT, type: NC, platform: P }, { id: CONFIG.IAP_MOVE, type: NC, platform: P }]);
+  IAP.when()
+    .productUpdated(() => { iapPrices(); iapSync(); })
+    .approved((t) => { grantFrom(t.products.map((p) => p.id)); t.finish(); })
+    .receiptUpdated(() => iapSync());
+  IAP.initialize([P]).then(() => { iapPrices(); iapSync(); });
+}
+function grantFrom(ids) { if (ids.includes(CONFIG.IAP_MOVE)) setTier("move"); else if (ids.includes(CONFIG.IAP_REPORT)) setTier("report"); }
+function iapSync() { if (!IAP) return; if (IAP.owned(CONFIG.IAP_MOVE)) setTier("move"); else if (IAP.owned(CONFIG.IAP_REPORT)) setTier("report"); }
+function iapPrices() {
+  if (!IAP) return;
+  [["report", CONFIG.IAP_REPORT], ["move", CONFIG.IAP_MOVE]].forEach(([k, id]) => { const p = IAP.get(id); const price = p && p.pricing && p.pricing.price; if (price) $(`[data-price="${k}"]`).textContent = price; });
+}
+async function iapBuy(which) {
+  const el = $("#iap-status");
+  if (!IAP) { status(el, "err", "The App Store isn't available right now. Try again in a moment."); return; }
+  const p = IAP.get(which === "move" ? CONFIG.IAP_MOVE : CONFIG.IAP_REPORT), offer = p && p.getOffer();
+  if (!offer) { status(el, "err", "This purchase isn't available yet. Check your connection and try again."); return; }
+  const err = await offer.order();
+  if (err && err.code !== window.CdvPurchase.ErrorCode.PAYMENT_CANCELLED) status(el, "err", err.message || "The purchase didn't go through.");
+}
+$("#b-restore").addEventListener("click", async () => {
+  const el = $("#iap-status");
+  if (!IAP) { status(el, "err", "The App Store isn't available right now."); return; }
+  spinner(el, "Restoring…");
+  await IAP.restorePurchases(); iapSync();
+  status(el, hasReport() ? "ok" : "err", hasReport() ? "Purchases restored." : "No purchases found for this Apple ID.");
+});
+</script>
+
+<script>
+/* =====================================================================
+   NEGOTIATION REPORT
+   ===================================================================== */
+function renderReport() {
+  const box = $("#report-body");
+  if (!S.done) { box.innerHTML = needScore(); return; }
+  if (!hasReport()) {
+    box.innerHTML = `<div class="card locked"><div class="lockbox">${lockSvg}
+      <p class="mono tiny muted" style="margin:0">SUGGESTED COUNTEROFFER</p><p class="big blur" style="font-size:72px;margin:4px 0 12px" aria-hidden="true">$#,###</p>
+      <p class="mono tiny muted" style="margin:0">WHAT LOSING YOU COSTS YOUR LANDLORD</p><p class="big blur" style="font-size:40px;margin:4px 0 18px" aria-hidden="true">$#,###–$#,###</p>
+      <ul style="text-align:left;max-width:420px;margin:0 auto 20px;padding-left:20px"><li>Your counteroffer, with the reasoning</li><li>3 messages ready to copy: Friendly, Firm, Ready to move</li><li>Rent-cap and notice rules for your state</li><li>Deadline reminders</li></ul>
+      <div class="stack" style="max-width:360px;margin:0 auto"><a class="btn" href="#get">Buy the Report ↑</a><button type="button" class="btn ink" data-open-code>Put Your Code In</button></div></div></div>`;
+    return;
+  }
+  const { cur, nr, b, sc, lev, co } = calc();
+  const st = S.letter.state || stateFromZip(S.letter.zip), R = st ? RULES[st] : null;
+  const flag = R && R.max && sc.incP > R.max ? `Your ${sc.incP.toFixed(1)}% increase is above ${R.n}'s ${R.max}% ceiling. If your unit is covered, that may not be allowed. Check whether your unit is exempt.`
+    : R && R.max && sc.incP > 5 ? `${R.n} caps covered units at ${R.base} (max ${R.max}%). Check this year's exact figure and whether your unit is covered.` : "";
+  const states = Object.entries(RULES).map(([k, v]) => [k, v.n]); if (st && !RULES[st]) states.push([st, st]);
+  states.sort((a, c) => a[1].localeCompare(c[1]));
+  const a = S.asks;
+  box.innerHTML = `
+    <div class="card pad" style="margin-bottom:22px">${countdownHtml(S.letter.noticeDeadline)}</div>
+
+    <h3 style="margin:8px 0 12px">1 · What losing you costs them</h3>
+    <div class="card shadow pad">
+      <p class="mono tiny muted" style="margin:0">ESTIMATED COST TO REPLACE YOU <span class="badge" style="margin-left:6px">Estimate</span></p>
+      <p class="big" style="font-size:clamp(46px,12vw,66px);margin:8px 0 10px">${usd(lev.low)}–${usd(lev.high)}</p>
+      <table class="t"><tr><td>1–2 months empty</td><td>${usd(lev.vLow)}–${usd(lev.vHigh)}</td></tr><tr><td>Cleaning + painting</td><td>${usd(lev.turnover)}</td></tr><tr><td>Listing + leasing</td><td>${usd(lev.listing)}</td></tr></table>
+      <p style="font-weight:800;font-size:18px;margin:20px 0 8px">Your leverage: ${lev.label} (${lev.score}/100)</p>
+      ${meterHtml(lev.score, "Leverage", "Low", "Strong")}
+      <ul class="mono small" style="list-style:none;padding:0;margin:12px 0 0;display:grid;gap:4px">${lev.factors.map((f) => `<li style="display:flex;justify-content:space-between;gap:10px"><span>${esc(f[0])}</span><span>+${f[1]}</span></li>`).join("")}</ul>
+      ${howHtml(lev.steps, ["Vacancy, turnover and listing costs are typical industry ranges, not your landlord's actual costs."])}
+    </div>
+
+    <h3 style="margin:40px 0 12px">2 · Your number</h3>
+    <div class="two">
+      <div class="card yellow shadow-ink pad"><p class="mono tiny" style="margin:0">COUNTER WITH</p><p class="big" style="font-size:68px;margin:4px 0">${usd(co.counter)}</p><p class="mono tiny" style="margin:0">per month</p></div>
+      <div class="card pad"><p class="mono tiny muted" style="margin:0">IF THEY SAY YES</p><p class="big" style="font-size:68px;margin:4px 0;color:var(--win)">${usd(co.yearly)}</p><p class="mono tiny muted" style="margin:0">saved per year vs. ${usd(nr)}</p></div>
+    </div>
+    <p class="small muted" style="margin-top:14px">Was ${usd(cur)} · They asked ${usd(nr)} · Local benchmark ${usd(b)}.</p>
+    ${howHtml(co.steps, null, sourceHtml())}
+
+    <h3 style="margin:40px 0 8px">3 · Copy, paste, send</h3>
+    <p class="muted small">You send these yourself, by email, text or your tenant portal. Add non-price wins to ask for:</p>
+    <div class="stack" style="gap:8px;margin-bottom:16px" id="asks">
+      <label class="check-row"><input type="checkbox" data-ask="longerLease" ${a.longerLease ? "checked" : ""}> Same price with a longer lease</label>
+      <label class="check-row"><input type="checkbox" data-ask="freeMonth" ${a.freeMonth ? "checked" : ""}> A free month</label>
+      <div class="check-row"><label style="display:flex;gap:10px;align-items:center"><input type="checkbox" data-ask="waivedFee" ${a.waivedFee ? "checked" : ""}> Waive a fee:</label><input class="inline" data-asktext="feeName" aria-label="Fee to waive" value="${esc(a.feeName)}"></div>
+      <div class="check-row"><label style="display:flex;gap:10px;align-items:center"><input type="checkbox" data-ask="repair" ${a.repair ? "checked" : ""}> Fix an overdue repair:</label><input class="inline" data-asktext="repairText" aria-label="Repair needed" placeholder="e.g. leaking kitchen faucet" value="${esc(a.repairText)}"></div>
+    </div>
+    ${CAPS.ai ? `<button type="button" class="btn ghost sm" id="b-ai-msg" style="margin-bottom:16px">Rewrite with AI</button><div id="ai-msg-status" aria-live="polite"></div>` : ""}
+    <div class="stack" id="msgs" style="gap:18px"></div>
+
+    <h3 style="margin:40px 0 12px">4 · Caps &amp; notice rules</h3>
+    <p><span class="badge">General information, not legal advice</span></p>
+    <label class="f" for="r-state">State</label>
+    <select class="in" id="r-state" style="max-width:320px;margin-bottom:16px"><option value="">Select…</option>${states.map(([k, n]) => `<option value="${k}" ${k === st ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>
+    ${flag ? `<div class="status err" style="margin-bottom:14px">${esc(flag)}</div>` : ""}
+    ${R ? `<dl style="display:grid;gap:12px;margin:0">
+      <div><dt style="font-weight:800">Rent-increase cap</dt><dd class="muted" style="margin:0">${esc(R.cap || `No statewide cap in ${R.n}.`)}</dd></div>
+      <div><dt style="font-weight:800">Notice required</dt><dd class="muted" style="margin:0">${esc(R.notice || "No statewide rule for rent-increase notice. Your lease terms govern.")}</dd></div>
+      ${R.local ? `<div><dt style="font-weight:800">City &amp; county</dt><dd class="muted" style="margin:0">${esc(R.local)}</dd></div>` : ""}</dl>`
+      : `<p class="muted">We don't have a rules entry for ${esc(st || "your state")} yet. In most states without rent control, landlords can raise rent at renewal by any amount with the notice your lease or state law requires. Check your state attorney general's tenant guide or a local tenant-rights group.</p>`}
+    <p class="mono tiny muted" style="margin-top:14px">Summary last reviewed ${RULES_REVIEWED}. Laws change and cities add their own rules: confirm with a local tenant-rights organization or attorney before relying on it. Your raise: ${sc.incP.toFixed(1)}%.</p>
+
+    <h3 style="margin:40px 0 12px">5 · Don't miss the deadline</h3>
+    ${S.letter.noticeDeadline ? `<button type="button" class="btn ghost sm" id="b-remind">${NATIVE ? "Remind me 7 days and 1 day before" : "Add reminders to my calendar"}</button><div id="remind-status" style="margin-top:12px" aria-live="polite"></div>`
+      : `<p class="muted small">Add a reply-by date in Step 1 to get reminders.</p>`}
+
+    <div class="card pad no-print" style="margin-top:40px">
+      <h3 style="margin-bottom:12px">Keep a copy</h3>
+      <div class="row">
+        <a class="btn sm" id="b-mail" href="#">Email it to myself</a>
+        ${NATIVE ? `<button type="button" class="btn ghost sm" id="b-share-report">Share report</button>` : `<button type="button" class="btn ghost sm" onclick="window.print()">Save as PDF</button>`}
+      </div>
+      <p class="hint">Opens your own email app with the report filled in. Nothing is sent by us.</p>
+    </div>`;
+
+  renderMessages();
+  $$("[data-ask]", box).forEach((i) => i.onchange = () => { S.asks[i.dataset.ask] = i.checked; S.aiMessages = null; save(); renderMessages(); });
+  $$("[data-asktext]", box).forEach((i) => i.oninput = () => { S.asks[i.dataset.asktext] = i.value; if (i.dataset.asktext === "repairText" && i.value) { S.asks.repair = true; $('[data-ask="repair"]').checked = true; } S.aiMessages = null; save(); renderMessages(); });
+  $("#r-state").onchange = (e) => { S.letter.state = e.target.value || null; save(); renderReport(); location.hash = "#report"; };
+  const mail = $("#b-mail"); mail.href = `mailto:?subject=${encodeURIComponent("My STAY OR GO rent report")}&body=${encodeURIComponent(reportText())}`;
+  if ($("#b-share-report")) $("#b-share-report").onclick = () => PLUG.Share && PLUG.Share.share({ title: "My rent report", text: reportText() }).catch(() => {});
+  if ($("#b-remind")) $("#b-remind").onclick = remind;
+  if ($("#b-ai-msg")) $("#b-ai-msg").onclick = async () => {
+    const el = $("#ai-msg-status"); spinner(el, "Writing your messages…");
+    try { const input = msgInput(calc().co); const j = await ai("messages", { input, templates: templates(input) }); S.aiMessages = j.messages; save(); status(el, "", ""); renderMessages(); }
+    catch (e) { status(el, "err", e.message); }
+  };
+}
+function renderMessages() {
+  const box = $("#msgs"); if (!box) return;
+  const list = S.aiMessages || templates(msgInput(calc().co));
+  box.innerHTML = list.map((m, i) => `<article class="card msg"><header><h3 style="margin:0">${esc(m.tone)}</h3><button type="button" class="btn sm" data-copy="${i}">Copy</button></header><div class="subj">Subject: ${esc(m.subject)}</div><div class="b">${esc(m.body)}</div></article>`).join("") +
+    `<p class="mono tiny muted">${S.aiMessages ? "Written by AI from your numbers." : "Template messages."} Read before sending, and only send what's true for you.</p>`;
+  $$("[data-copy]", box).forEach((b) => b.onclick = () => copy(`Subject: ${list[b.dataset.copy].subject}\n\n${list[b.dataset.copy].body}`, b));
+}
+async function copy(text, btn) {
+  try { await navigator.clipboard.writeText(text); } catch (e) { const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+  const old = btn.textContent; btn.textContent = "Copied ✓"; setTimeout(() => btn.textContent = old, 1600);
+}
+function reportText() {
+  const { cur, nr, b, sc, lev, co, be } = calc();
+  let t = `STAY OR GO — my rent report\n\nFair Rent Score: ${sc.score}/100 (${sc.label})\n${sc.headline} ${sc.subhead}\nWas ${usd(cur)} · Now ${usd(nr)} · Local benchmark ${usd(b)}${S.market && S.market.sample ? " (SAMPLE DATA)" : ""}\nReply by: ${prettyDate(S.letter.noticeDeadline)}\n`;
+  if (hasReport()) t += `\nCost to landlord of losing me: ${usd(lev.low)}–${usd(lev.high)}\nLeverage: ${lev.label} (${lev.score}/100)\nMy counteroffer: ${usd(co.counter)}/mo (saves ${usd(co.yearly)}/yr)\n`;
+  if (hasMove()) t += `\nStay or go: ${be.verdict}. ${be.sentence}\n`;
+  return t + `\nEstimates, not guarantees. Not legal advice.`;
+}
+async function remind() {
+  const el = $("#remind-status"), d = S.letter.noticeDeadline;
+  const times = [7, 1].map((n) => { const x = new Date(d + "T10:00:00"); x.setDate(x.getDate() - n); return [n, x]; }).filter(([, x]) => x > new Date());
+  if (!times.length) { status(el, "err", "The deadline is too close for reminders."); return; }
+  if (NATIVE && PLUG.LocalNotifications) {
+    try {
+      const p = await PLUG.LocalNotifications.requestPermissions();
+      if (p.display !== "granted") { status(el, "err", "Notifications are off. Turn them on in Settings › STAY OR GO."); return; }
+      await PLUG.LocalNotifications.schedule({ notifications: times.map(([n, x]) => ({ id: 7000 + n, title: n === 1 ? "Renewal deadline tomorrow" : `Renewal deadline in ${n} days`, body: "Your counteroffer messages are ready in STAY OR GO.", schedule: { at: x } })) });
+      status(el, "ok", `Reminders set for ${times.map(([, x]) => x.toLocaleDateString("en-US", { month: "short", day: "numeric" })).join(" and ")}.`);
+    } catch (e) { status(el, "err", "Couldn't set reminders."); }
+    return;
+  }
+  const dd = d.replace(/-/g, ""), n2 = new Date(d + "T12:00:00"); n2.setDate(n2.getDate() + 1);
+  const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//STAY OR GO//EN", "BEGIN:VEVENT", `UID:${dd}-${Date.now()}@stayorgo`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}`,
+    `DTSTART;VALUE=DATE:${dd}`, `DTEND;VALUE=DATE:${n2.toISOString().slice(0, 10).replace(/-/g, "")}`, "SUMMARY:Lease renewal deadline", "DESCRIPTION:Reply to your landlord's renewal offer before today ends.",
+    "BEGIN:VALARM", "TRIGGER:-P7D", "ACTION:DISPLAY", "DESCRIPTION:Renewal deadline in 7 days", "END:VALARM", "BEGIN:VALARM", "TRIGGER:-P1D", "ACTION:DISPLAY", "DESCRIPTION:Renewal deadline tomorrow", "END:VALARM", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" })); a.download = "lease-deadline.ics"; document.body.appendChild(a); a.click(); a.remove();
+  status(el, "ok", "Calendar file downloaded. Open it to add the deadline with alerts 7 days and 1 day before.");
+}
+
+/* =====================================================================
+   MOVE KIT
+   ===================================================================== */
+const ROOMS = {
+  "Before you start": ["Photograph the move-in checklist or condition report, if you have one", "Turn on every light and open the blinds", "Make sure your camera saves the date and time"],
+  Kitchen: ["Wide shot from each corner", "Inside the oven, fridge, freezer and dishwasher", "Countertops, sink and backsplash close-up", "Inside every cabinet and drawer", "Floor along the cabinets"],
+  "Living areas": ["Wide shot of each wall", "Floors and carpet, including corners", "Windows, screens and blinds", "Light fixtures and outlets", "Any existing damage, with something for scale"],
+  Bedrooms: ["Wide shot of each wall", "Inside closets, shelves and rods", "Floors and carpet", "Doors, frames and handles"],
+  Bathrooms: ["Tub or shower, grout and caulk", "Toilet, sink and vanity (inside too)", "Mirror, fan and towel bars", "Floor around the toilet"],
+  "Outside & extras": ["Front door, lock and mailbox", "Balcony or patio", "Parking spot or garage", "Every key, fob and remote laid out together"],
+  "Hand-back": ["Video walkthrough of the empty unit, saying the date", "Photo of the meter readings", "Written receipt for returned keys", "Forwarding address given in writing for the deposit"],
+};
+function renderMove() {
+  const box = $("#move-body");
+  if (!S.done) { box.innerHTML = needScore(); return; }
+  if (!hasMove()) {
+    box.innerHTML = `<div class="card"><div class="lockbox">${lockSvg}<p style="font-weight:800;font-size:18px">Price out your real move before you decide.</p>
+      <ul style="text-align:left;max-width:440px;margin:0 auto 20px;padding-left:20px"><li>True cost of moving, every number editable</li><li>One-sentence break-even and a final STAY or GO</li><li>Sell or Ship: photo your furniture, get Keep / Sell / Donate plus ready-to-post listings</li><li>Compare up to 3 apartments by true monthly cost</li><li>Room-by-room move-out photo checklist</li></ul>
+      <div class="stack" style="max-width:360px;margin:0 auto"><a class="btn" href="#get">Buy the Move Kit ↑</a><button type="button" class="btn ink" data-open-code>Put Your Code In</button></div></div></div>`;
+    return;
+  }
+  if (!S.moveCosts) S.moveCosts = defaultMove();
+  const m = S.moveCosts;
+  box.innerHTML = `
+    <div class="card shadow pad" id="mv-verdict"></div>
+    <h3 style="margin:40px 0 8px">1 · Every cost, editable</h3>
+    <p class="muted small">Pre-filled with typical values. Change anything you know better.</p>
+    <div class="two">${MOVE_FIELDS.map(([k, label, hint, unit]) => `<div><label class="f" for="mv-${k}">${esc(label)}</label><div class="money">${unit === "days" || unit === "months" ? "" : "<span>$</span>"}<input class="in" id="mv-${k}" data-mv="${k}" inputmode="numeric" value="${m[k]}">${unit ? `<span>${unit}</span>` : ""}</div><p class="hint">${esc(hint)}</p></div>`).join("")}</div>
+    <div class="card" style="margin-top:20px" id="mv-table"></div>
+    <div id="mv-how"></div>
+    <button type="button" class="link" id="mv-reset">Reset to typical values</button>
+
+    <h3 style="margin:40px 0 8px">2 · Move it or sell it?</h3>
+    ${CAPS.ai ? `<p class="muted small">Photograph each big item (one item per photo, up to 8 at a time). AI estimates resale value, replacement cost and cost to move, then labels each one. Photos go to Anthropic's Claude AI to be read and aren't kept.</p>
+      <input type="file" id="it-file" accept="image/*" multiple hidden><button type="button" class="btn" id="it-add">Add item photos</button><div id="it-status" style="margin-top:12px" aria-live="polite"></div>`
+      : `<p class="muted small">Sell or Ship reads furniture photos with AI. It turns on when the site owner connects the AI helper.</p>`}
+    <div id="items" class="stack" style="margin-top:14px"></div>
+
+    <h3 style="margin:40px 0 8px">3 · Compare apartments</h3>
+    <p class="muted small">Paste the full text of up to 3 listings. We pull out rent and fees, add estimated utilities, and spread one-time fees over 12 months.</p>
+    <div class="stack" style="gap:12px">${[0, 1, 2].map((i) => `<div><label class="f" for="lt${i}">Listing ${i + 1}</label><textarea class="in" id="lt${i}" data-lt="${i}" style="min-height:90px;font-size:15px">${esc(S.listingTexts[i] || "")}</textarea></div>`).join("")}</div>
+    <button type="button" class="btn" id="lt-go" style="margin-top:14px">Compare</button><div id="lt-status" style="margin-top:12px" aria-live="polite"></div>
+    <div id="lt-cards" style="margin-top:16px"></div>
+
+    <h3 style="margin:40px 0 8px">4 · Move-out photo checklist</h3>
+    <p class="muted small">Dated photos are your best evidence if the landlord disputes your deposit. Take them after cleaning, before you hand back the keys.</p>
+    <p class="mono small" id="ck-count"></p>
+    <div class="stack" style="gap:18px">${Object.entries(ROOMS).map(([room, list]) => `<fieldset class="card room"><legend>${esc(room)}</legend>${list.map((it) => { const k = room + ":" + it; return `<label><input type="checkbox" data-ck="${esc(k)}" ${S.checklist[k] ? "checked" : ""}><span>${esc(it)}</span></label>`; }).join("")}</fieldset>`).join("")}</div>`;
+
+  updateMove();
+  $$("[data-mv]", box).forEach((i) => i.oninput = () => { S.moveCosts[i.dataset.mv] = numIn(i.value) || 0; save(); updateMove(); });
+  $("#mv-reset").onclick = () => { S.moveCosts = defaultMove(); save(); renderMove(); renderResult(); location.hash = "#move"; };
+  $$("[data-lt]", box).forEach((t) => t.oninput = () => { S.listingTexts[t.dataset.lt] = t.value; save(); });
+  $("#lt-go").onclick = compareListings;
+  $$("[data-ck]", box).forEach((c) => c.onchange = () => { S.checklist[c.dataset.ck] = c.checked; save(); ckCount(); });
+  ckCount(); renderItems(); renderListings();
+  if ($("#it-add")) { $("#it-add").onclick = () => $("#it-file").click(); $("#it-file").onchange = (e) => addItems(e.target.files); }
+}
+function updateMove() {
+  const be = breakEven(S.letter.newRent, S.moveCosts);
+  $("#mv-verdict").innerHTML = `<div class="stamp-box"><span class="stamp ${be.verdict === "STAY" ? "stay" : "go"}" style="font-size:96px" role="img" aria-label="Verdict: ${be.verdict}">${be.verdict}</span></div><p style="font-weight:800;font-size:19px;margin:22px 0 0">${esc(be.sentence)}</p>`;
+  $("#mv-table").innerHTML = `<table class="t">${be.lines.map((l) => `<tr><td>${esc(l[0])}</td><td>${usd(l[1])}</td></tr>`).join("")}<tr class="total"><td>Total cost to move</td><td>${usd(be.total)}</td></tr><tr><td>Monthly saving vs. ${usd(S.letter.newRent)} renewal</td><td style="color:${be.save > 0 ? "var(--win)" : "var(--loss)"};font-weight:600">${usd(be.save)}</td></tr></table>`;
+  $("#mv-how").innerHTML = howHtml(["Total = deposit − deposit back + applications + movers + overlap rent + utilities + days off × daily pay + supplies.",
+    `Monthly saving = renewal ${usd(S.letter.newRent)} − new place ${usd(S.moveCosts.newPlaceRent)} = ${usd(be.save)}.`,
+    be.months ? `Break-even = ${usd(be.total)} ÷ ${usd(be.save)} = ${be.months} months.` : "No monthly saving, so the move never pays for itself.",
+    `GO if break-even is within your ${S.moveCosts.leaseMonths}-month lease; otherwise STAY.`], ["Typical US costs, not quotes. Get 2–3 mover quotes for big moves.", "Doesn't count future rent increases at the new place or your apartment-hunting time."]);
+  renderResult();
+}
+function ckCount() { const total = Object.values(ROOMS).flat().length, n = Object.values(S.checklist).filter(Boolean).length; $("#ck-count").textContent = `${n} / ${total} done`; }
+
+function decide(i) {
+  const resale = Math.round((i.resaleLow + i.resaleHigh) / 2), edge = i.replacementCost - resale;
+  if (edge > i.moveCost) return ["Keep", `Replacing it (${usd(i.replacementCost)}) minus what it sells for (${usd(resale)}) is ${usd(edge)}, more than the ${usd(i.moveCost)} to move it.`];
+  if (resale >= 40) return ["Sell", `Moving it costs ${usd(i.moveCost)}; selling brings about ${usd(resale)}, and a replacement costs ${usd(i.replacementCost)}.`];
+  return ["Donate", `Resale is only about ${usd(resale)}. Donating saves the ${usd(i.moveCost)} to move it.`];
+}
+async function addItems(files) {
+  const el = $("#it-status"); if (!files || !files.length) return;
+  if (!aiConsent()) { $("#it-file").value = ""; return; }
+  try {
+    spinner(el, "Preparing photos…");
+    const photos = await Promise.all(Array.from(files).slice(0, 8).map((f) => fileToUpload(f, 1200)));
+    spinner(el, `Estimating ${photos.length} item${photos.length > 1 ? "s" : ""}…`);
+    const j = await ai("items", { photos });
+    S.items = S.items.concat(j.items || []); save(); status(el, "", ""); renderItems();
+  } catch (e) { status(el, "err", e.message || "Couldn't read those photos."); }
+  $("#it-file").value = "";
+}
+function renderItems() {
+  const box = $("#items"); if (!box) return;
+  if (!S.items.length) { box.innerHTML = ""; return; }
+  const d = S.items.map((i) => [i, ...decide(i)]);
+  const sell = d.filter((x) => x[1] === "Sell").reduce((s, x) => s + Math.round((x[0].resaleLow + x[0].resaleHigh) / 2), 0);
+  const saved = d.filter((x) => x[1] !== "Keep").reduce((s, x) => s + x[0].moveCost, 0);
+  box.innerHTML = `<p style="font-weight:800;margin:0">Selling brings in about ${usd(sell)} and saves about ${usd(saved)} in moving costs. <span class="badge">AI estimate</span></p>` +
+    d.map(([i, v, why], k) => `<article class="card item"><header><div><h3 style="margin:0">${esc(i.name)}</h3><p class="mono tiny muted" style="margin:0">${esc(i.condition)}</p></div><span class="verdict ${v}">${v.toUpperCase()}</span></header>
+      <div class="b"><dl class="trio" style="margin:0"><div><dt>Resale</dt><dd>${usd(i.resaleLow)}–${usd(i.resaleHigh)}</dd></div><div><dt>Replace</dt><dd>${usd(i.replacementCost)}</dd></div><div><dt>To move</dt><dd>${usd(i.moveCost)}</dd></div></dl>
+      <p class="small" style="margin:12px 0 4px">${esc(why)}</p><p class="tiny muted">${esc(i.notes || "")}</p>
+      ${v === "Sell" && i.listing ? `<div style="border:2px solid var(--ink);background:var(--paper);padding:12px;margin-top:10px"><div class="row" style="justify-content:space-between"><span class="mono tiny">MARKETPLACE LISTING</span><button type="button" class="btn sm" data-lcopy="${k}">Copy</button></div><p style="font-weight:800;margin:8px 0 4px">${esc(i.listing.title)} · ${usd(i.listing.price)}</p><p class="small" style="margin:0">${esc(i.listing.description)}</p></div>` : ""}
+      <button type="button" class="link" data-irm="${k}">Remove</button></div></article>`).join("") +
+    howHtml(["Keep if (replacement cost − resale value) is more than the cost to move it.", "Otherwise Sell if it would fetch $40 or more; else Donate."], ["AI estimates from your photo, not appraisals. Check recent local listings before pricing."]);
+  $$("[data-lcopy]", box).forEach((b) => b.onclick = () => { const l = S.items[b.dataset.lcopy].listing; copy(`${l.title}\n$${l.price}\n\n${l.description}`, b); });
+  $$("[data-irm]", box).forEach((b) => b.onclick = () => { S.items.splice(+b.dataset.irm, 1); save(); renderItems(); });
+}
+async function compareListings() {
+  const el = $("#lt-status"), texts = S.listingTexts.map((t) => (t || "").trim()).filter(Boolean).slice(0, 3);
+  if (!texts.length) { status(el, "err", "Paste at least one listing."); return; }
+  let list;
+  if (CAPS.ai) {
+    spinner(el, "Reading listings…");
+    try { list = (await ai("listings", { texts })).listings; } catch (e) { list = null; }
+  }
+  if (!list) list = texts.map(parseListingBasic);
+  S.listings = list.map((l, i) => ({ name: l.name || `Listing ${i + 1}`, rent: +l.rent || 0, bedrooms: l.bedrooms ?? S.ans.br, parking: +l.parking || 0, petFees: +l.petFees || 0, otherMonthly: +l.otherMonthly || 0, oneTimeFees: +l.oneTimeFees || 0, utilitiesIncluded: l.utilitiesIncluded || [] }));
+  save(); status(el, "", ""); renderListings();
+}
+function renderListings() {
+  const box = $("#lt-cards"); if (!box) return;
+  if (!S.listings.length) { box.innerHTML = ""; return; }
+  const tot = S.listings.map(trueMonthly), best = Math.min(...tot.map((t) => t.total)), renewal = S.letter.newRent;
+  const F = [["rent", "Rent"], ["parking", "Parking"], ["petFees", "Pet rent"], ["otherMonthly", "Other monthly fees"], ["oneTimeFees", "One-time fees"]];
+  box.innerHTML = `<p class="small muted" style="margin:0 0 10px">Check every number against the listing. Tap a utility if it's included.</p><div class="grid3">` + S.listings.map((l, i) => `<article class="card listing-card ${tot[i].total === best ? "best" : ""}">
+      <input class="name" data-ln="${i}" aria-label="Listing name" value="${esc(l.name)}">
+      <p class="big" style="font-size:50px;margin:0">${usd(tot[i].total)}<span style="font-size:20px">/mo</span></p>
+      <p class="mono tiny" style="margin:0;color:${tot[i].total < renewal ? "var(--win)" : "var(--loss)"}">${tot[i].total < renewal ? usd(renewal - tot[i].total) + " less" : usd(tot[i].total - renewal) + " more"} than your renewal</p>
+      ${F.map(([k, lab]) => `<label class="lrow"><span>${lab}</span><input inputmode="numeric" data-lf="${i}:${k}" value="${l[k]}"></label>`).join("")}
+      <div class="row" style="gap:6px">${["electric", "water", "internet", "gas"].map((u) => `<button type="button" class="chip" style="min-height:38px;font-size:13px;padding:4px 8px" data-lu="${i}:${u}" aria-pressed="${l.utilitiesIncluded.includes(u)}">${u} incl.</button>`).join("")}</div>
+      <p class="mono tiny muted" style="margin:0">+ ${usd(tot[i].utilities)} est. utilities · + ${usd(tot[i].spread)}/mo one-time fees</p></article>`).join("") + `</div>` +
+    howHtml(["True monthly = rent + parking + pet rent + other required monthly fees + estimated utilities + one-time fees ÷ 12.", `Utility estimate for ${S.ans.br === 0 ? "a studio" : S.ans.br + " bedrooms"}: about ${usd(UTIL_EST[Math.min(4, S.ans.br)])}/mo, reduced for utilities the listing includes (electric 45%, internet 25%, water/trash 20%, gas 10%).`], ["Utility costs are rough national typicals, not quotes. Ask the landlord for average bills.", "Refundable deposits aren't counted as a monthly cost."]);
+  $$("[data-lf]", box).forEach((inp) => inp.onchange = () => { const [i, k] = inp.dataset.lf.split(":"); S.listings[i][k] = numIn(inp.value) || 0; save(); renderListings(); });
+  $$("[data-ln]", box).forEach((inp) => inp.onchange = () => { S.listings[inp.dataset.ln].name = inp.value; save(); });
+  $$("[data-lu]", box).forEach((b) => b.onclick = () => { const [i, u] = b.dataset.lu.split(":"), arr = S.listings[i].utilitiesIncluded; S.listings[i].utilitiesIncluded = arr.includes(u) ? arr.filter((x) => x !== u) : arr.concat(u); save(); renderListings(); });
+}
+</script>
+
+<script>
+/* =====================================================================
+   STEP 1 · THE LETTER + QUESTIONS
+   ===================================================================== */
+const F = { cur: "#l-cur", newRent: "#l-new", zip: "#l-zip", months: "#l-months", deadline: "#l-deadline", end: "#l-end", ll: "#l-ll" };
+function fillForm() {
+  const l = S.letter;
+  $(F.cur).value = l.currentRent ?? ""; $(F.newRent).value = l.newRent ?? ""; $(F.zip).value = l.zip ?? "";
+  $(F.months).value = l.newLeaseMonths ?? 12; $(F.deadline).value = l.noticeDeadline ?? ""; $(F.end).value = l.leaseEndDate ?? ""; $(F.ll).value = l.landlordName ?? "";
+  $("#q-years").value = S.ans.years;
+  $$("#q-br .chip").forEach((c) => c.setAttribute("aria-pressed", String(+c.dataset.v === S.ans.br)));
+  $$("[data-q]").forEach((g) => $$(".chip", g).forEach((c) => c.setAttribute("aria-pressed", String((c.dataset.v === "1") === S.ans[g.dataset.q]))));
+  $("#l-manual").value = S.manual ?? "";
+}
+function applyExtract(f) {
+  if (f.currentRent) $(F.cur).value = f.currentRent;
+  if (f.newRent) $(F.newRent).value = f.newRent;
+  if (f.zip) $(F.zip).value = f.zip;
+  if (f.newLeaseMonths) $(F.months).value = f.newLeaseMonths;
+  if (f.noticeDeadline) $(F.deadline).value = f.noticeDeadline;
+  if (f.leaseEndDate) $(F.end).value = f.leaseEndDate;
+  if (f.landlordName) $(F.ll).value = f.landlordName;
+  if (f.state) S.letter.state = f.state;
+}
+$("#q-br").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; S.ans.br = +c.dataset.v; $$("#q-br .chip").forEach((x) => x.setAttribute("aria-pressed", String(x === c))); });
+$$("[data-q]").forEach((g) => g.addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; S.ans[g.dataset.q] = c.dataset.v === "1"; $$(".chip", g).forEach((x) => x.setAttribute("aria-pressed", String(x === c))); }));
+
+$("#b-read").addEventListener("click", async () => {
+  const el = $("#read-status"), text = $("#f-paste").value.trim();
+  if (!text) { status(el, "err", "Paste the letter or type the details first."); return; }
+  if (CAPS.ai) {
+    spinner(el, "Reading your letter…");
+    try { applyExtract((await ai("extract", { text })).fields || {}); status(el, "ok", "Filled in below. Check every number."); return; } catch (e) { /* fall back */ }
+  }
+  applyExtract(parseBasic(text));
+  status(el, "ok", "Filled in what we could find below. Check every number.");
+});
+async function readUpload(file) {
+  const el = $("#read-status"); if (!file) return;
+  if (!aiConsent()) { status(el, "err", "No problem. Type the numbers below instead."); return; }
+  try {
+    spinner(el, "Preparing your photo…");
+    const upload = await fileToUpload(file);
+    spinner(el, "Reading your letter…");
+    const j = await ai("extract", { upload });
+    applyExtract(j.fields || {});
+    status(el, "ok", "Filled in below. Check every number against your letter.");
+    $("#l-cur").scrollIntoView({ behavior: "smooth", block: "center" });
+  } catch (e) { status(el, "err", e.message || "We couldn't read that. Type the numbers below instead."); }
+}
+$("#b-camera").onclick = () => $("#f-camera").click();
+$("#b-file").onclick = () => $("#f-file").click();
+$("#f-camera").onchange = (e) => readUpload(e.target.files[0]);
+$("#f-file").onchange = (e) => readUpload(e.target.files[0]);
+
+$("#b-score").addEventListener("click", async () => {
+  const el = $("#score-status");
+  const cur = numIn($(F.cur).value), nr = numIn($(F.newRent).value), zip = $(F.zip).value.replace(/\D/g, "").slice(0, 5);
+  const missing = [!cur && "current rent", !nr && "new rent", zip.length !== 5 && "a 5-digit ZIP"].filter(Boolean);
+  if (missing.length) { status(el, "err", "Still need: " + missing.join(", ") + "."); return; }
+  const prevZip = S.letter.zip, prevBr = S.done ? S._br : null;
+  S.letter = { ...S.letter, currentRent: cur, newRent: nr, zip, newLeaseMonths: numIn($(F.months).value) || 12,
+    noticeDeadline: $(F.deadline).value || null, leaseEndDate: $(F.end).value || null, landlordName: $(F.ll).value.trim() || null };
+  if (!S.letter.state || zip !== prevZip) S.letter.state = stateFromZip(zip);
+  S.ans.years = Math.min(50, Math.max(0, Math.floor(numIn($("#q-years").value) || 0)));
+  spinner(el, "Comparing with local rents…");
+  S.market = await lookupMarket(zip, S.ans.br);
+  if (!S.market) {
+    const manual = numIn($("#l-manual").value);
+    $("#manual-wrap").hidden = false;
+    if (!manual) { status(el, "err", "We don't have market data for this ZIP yet. Enter a comparable rent above, then tap again."); $("#manual-wrap").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    S.manual = manual;
+  } else { S.manual = null; $("#manual-wrap").hidden = true; }
+  if (zip !== prevZip || S.ans.br !== prevBr) { S.moveCosts = null; S.listings = S.listings || []; }
+  S._br = S.ans.br; S.done = true; S.aiMessages = null; save();
+  status(el, "", ""); renderAll();
+  $("#result").scrollIntoView({ behavior: "smooth" });
+});
+
+$("#b-delete").addEventListener("click", () => {
+  if (!confirm("Delete your letter details and results from this device? This can't be undone. (Purchases stay unlocked.)")) return;
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  S = fresh(); fillForm(); $("#f-paste").value = ""; renderAll();
+  $("#b-delete").textContent = "Deleted ✓";
+});
+
+/* =====================================================================
+   START
+   ===================================================================== */
+function renderAll() { renderResult(); renderUnlock(); renderReport(); renderMove(); }
+(function init() {
+  $("#yr").textContent = new Date().getFullYear();
+  // Code arriving from the "Open STAY OR GO and unlock" button: page?code=STAY-XXXX-XXXX
+  const qc = new URLSearchParams(location.search).get("code");
+  if (qc && !NATIVE) { $("#codebox").hidden = false; $("#code-in").value = prettyCode(qc); history.replaceState(null, "", location.pathname + "#get"); setTimeout(() => { $("#get").scrollIntoView(); redeem(qc); }, 300); }
+  if (CONFIG.WORKER_URL) {
+    fetch(workerUrl("/status")).then((r) => r.json()).then((c) => { CAPS = { ...CAPS, ...c }; $("#ai-upload").hidden = !CAPS.ai; renderReport(); renderMove(); }).catch(() => {});
+  }
+  if (NATIVE) {
+    // App Store rule: in the iPhone app, purchases go through Apple only.
+    $("#codebox").hidden = true; $("#code-btn-wrap").hidden = true; $("#silarius-note").hidden = true; $("#iap-box").hidden = false;
+    $("#pay-note").textContent = "Paid with your Apple ID. One-time purchase.";
+    document.addEventListener("deviceready", initIAP, false);
+    if (window.CdvPurchase) initIAP();
+  }
+  const links = [];
+  if (CONFIG.PRIVACY_URL) links.push(`<a href="${esc(CONFIG.PRIVACY_URL)}" style="color:#c3cafc">Privacy</a>`);
+  if (CONFIG.SUPPORT_EMAIL) links.push(`<a href="mailto:${esc(CONFIG.SUPPORT_EMAIL)}" style="color:#c3cafc">${esc(CONFIG.SUPPORT_EMAIL)}</a>`);
+  if (links.length) $("#foot-links").insertAdjacentHTML("beforeend", " · " + links.join(" · "));
+  if (S.manual) $("#manual-wrap").hidden = false;
+  fillForm(); renderAll();
+})();
+</script>
+</body>
+</html>
